@@ -1291,6 +1291,20 @@ function getCurrentWeekDates() {
   return weekDates;
 }
 
+// Get week dates from a start date
+function getWeekDatesFromStart(startDate) {
+  const monday = new Date(startDate);
+  
+  const weekDates = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    weekDates.push(date.toISOString().split('T')[0]);
+  }
+  
+  return weekDates;
+}
+
 // Main App Component
 function App() {
   const [meals, setMeals] = useState([]);
