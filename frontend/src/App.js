@@ -1218,7 +1218,7 @@ function App() {
         <div className="header-content">
           <h1 className="app-title">
             <ChefHat className="w-8 h-8" />
-            Family Meal Planner
+            Happy Gut
           </h1>
           <div className="header-actions">
             <Button
