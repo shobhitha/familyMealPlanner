@@ -1300,6 +1300,8 @@ function App() {
   const [isAISuggestionOpen, setIsAISuggestionOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState(null);
   const [weekDates, setWeekDates] = useState(getCurrentWeekDates());
+  const [currentWeekStart, setCurrentWeekStart] = useState(getCurrentWeekDates()[0]);
+  const [availableWeeks, setAvailableWeeks] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
