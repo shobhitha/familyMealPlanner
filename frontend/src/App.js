@@ -1221,6 +1221,15 @@ function App() {
             Family Meal Planner
           </h1>
           <div className="header-actions">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentView('grocery')}
+              data-testid="grocery-list-button"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Grocery List
+            </Button>
+            
             <Dialog open={isAISuggestionOpen} onOpenChange={setIsAISuggestionOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" data-testid="ai-suggest-button">
