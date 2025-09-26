@@ -147,12 +147,17 @@ A comprehensive meal planning application that helps families organize their wee
 ### Creating Meals
 
 1. **Click "Add Meal" button** in the top navigation
-2. **Fill in meal details**:
-   - **Meal Name**: Enter a descriptive name
-   - **Ingredients**: Add one ingredient per line
-   - **Recipe**: Provide detailed cooking instructions
-3. **Select Family Preferences**: Click on family member emojis to mark favorites
+2. **Fill in meal details** (fields marked with * are mandatory):
+   - **Meal Name** ⚠️ **(Required)**: Enter a descriptive name for your recipe
+   - **Ingredients** ⚠️ **(Required)**: Add one ingredient per line (minimum one ingredient required)
+   - **Recipe**: Provide detailed cooking instructions (optional)
+3. **Select Family Preferences**: Click on family member emojis to mark favorites (optional)
 4. **Save the meal**: Click "Create Meal" button
+
+**Validation Rules:**
+- Meal name cannot be empty or contain only spaces
+- At least one valid ingredient is required (empty ingredient lines are automatically filtered out)
+- Recipe field is optional but if provided cannot be empty
 
 ### AI Recipe Suggestions
 
