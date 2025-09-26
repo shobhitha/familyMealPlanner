@@ -467,7 +467,7 @@ yarn test:e2e
 
 ### Project Structure
 ```
-family-meal-planner/
+happy-gut/
 ├── backend/                 # FastAPI backend application
 │   ├── server.py           # Main application with all endpoints
 │   ├── requirements.txt    # Python dependencies
