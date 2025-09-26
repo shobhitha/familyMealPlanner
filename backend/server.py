@@ -119,6 +119,55 @@ class IngredientSearch(BaseModel):
     query: str
     limit: Optional[int] = 10
 
+class GroceryItem(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    category: Optional[str] = None  # produce, dairy, meat, pantry, etc.
+    is_checked: bool = False
+    added_by: Optional[str] = None  # user who added this item
+    from_recipe: Optional[str] = None  # meal_id if from a recipe
+    quantity: Optional[str] = None  # "2 lbs", "1 cup", etc.
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class GroceryList(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    week_start_date: str  # YYYY-MM-DD format
+    items: List[GroceryItem] = Field(default_factory=list)
+    collaborators: List[str] = Field(default_factory=list)  # email addresses or user IDs
+    created_by: Optional[str] = None
+    is_shared: bool = False
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class GroceryListCreate(BaseModel):
+    name: str
+    week_start_date: str
+    auto_generate: bool = True  # Whether to auto-populate from meal plans
+
+class GroceryItemCreate(BaseModel):
+    name: str
+    category: Optional[str] = None
+    quantity: Optional[str] = None
+    notes: Optional[str] = None
+
+class GroceryItemUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    is_checked: Optional[bool] = None
+    quantity: Optional[str] = None
+    notes: Optional[str] = None
+
+class ShareGroceryListRequest(BaseModel):
+    collaborator_email: str
+    permission: str = "edit"  # view, edit
+
+class WeeklyGroceryGenerate(BaseModel):
+    week_start_date: str
+    merge_duplicates: bool = True
+    organize_by_category: bool = True
+
 # Helper functions
 def prepare_for_mongo(data):
     """Convert datetime objects to ISO strings for MongoDB storage"""
