@@ -147,7 +147,347 @@ function DroppableMealSlot({ date, slot, meal, onMealDrop, onRemoveMeal }) {
   );
 }
 
-// Ingredient Search Component
+// Grocery List Components
+function GroceryListPage({ weekDates, onBack }) {
+  const [groceryLists, setGroceryLists] = useState([]);
+  const [currentList, setCurrentList] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [showShareDialog, setShowShareDialog] = useState(false);
+
+  useEffect(() => {
+    loadGroceryLists();
+  }, []);
+
+  const loadGroceryLists = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API}/grocery-lists`);
+      setGroceryLists(response.data);
+      
+      // If there's a list for current week, select it
+      const currentWeekList = response.data.find(list => list.week_start_date === weekDates[0]);
+      if (currentWeekList) {
+        setCurrentList(currentWeekList);
+      }
+    } catch (error) {
+      console.error('Failed to load grocery lists:', error);
+      toast.error('Failed to load grocery lists');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createWeeklyGroceryList = async () => {
+    try {
+      setIsCreating(true);
+      const response = await axios.post(`${API}/grocery-lists`, {
+        name: `Grocery List - Week of ${new Date(weekDates[0]).toLocaleDateString()}`,
+        week_start_date: weekDates[0],
+        auto_generate: true
+      });
+      
+      setCurrentList(response.data);
+      setGroceryLists(prev => [response.data, ...prev]);
+      toast.success('Grocery list generated from your meal plan!');
+    } catch (error) {
+      console.error('Failed to create grocery list:', error);
+      toast.error('Failed to create grocery list');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const toggleItemCheck = async (itemId, isChecked) => {
+    if (!currentList) return;
+
+    try {
+      const response = await axios.put(`${API}/grocery-lists/${currentList.id}/items/${itemId}`, {
+        is_checked: isChecked
+      });
+      
+      setCurrentList(response.data);
+      
+      // Update in the lists array as well
+      setGroceryLists(prev => prev.map(list => 
+        list.id === currentList.id ? response.data : list
+      ));
+    } catch (error) {
+      console.error('Failed to update grocery item:', error);
+      toast.error('Failed to update item');
+    }
+  };
+
+  const addCustomItem = async (e) => {
+    e.preventDefault();
+    if (!newItemName.trim() || !currentList) return;
+
+    try {
+      const response = await axios.post(`${API}/grocery-lists/${currentList.id}/items`, {
+        name: newItemName.trim(),
+        category: null,
+        quantity: null,
+        notes: 'Added manually'
+      });
+      
+      setCurrentList(response.data);
+      setGroceryLists(prev => prev.map(list => 
+        list.id === currentList.id ? response.data : list
+      ));
+      setNewItemName('');
+      toast.success('Item added to grocery list!');
+    } catch (error) {
+      console.error('Failed to add grocery item:', error);
+      toast.error('Failed to add item');
+    }
+  };
+
+  const deleteItem = async (itemId) => {
+    if (!currentList) return;
+
+    try {
+      const response = await axios.delete(`${API}/grocery-lists/${currentList.id}/items/${itemId}`);
+      
+      setCurrentList(response.data);
+      setGroceryLists(prev => prev.map(list => 
+        list.id === currentList.id ? response.data : list
+      ));
+      toast.success('Item removed from list');
+    } catch (error) {
+      console.error('Failed to delete grocery item:', error);
+      toast.error('Failed to remove item');
+    }
+  };
+
+  // Group items by category
+  const groupedItems = currentList?.items?.reduce((groups, item) => {
+    const category = item.category || 'other';
+    if (!groups[category]) groups[category] = [];
+    groups[category].push(item);
+    return groups;
+  }, {}) || {};
+
+  const categoryDisplayNames = {
+    produce: '🥬 Produce',
+    dairy: '🥛 Dairy',
+    protein: '🥩 Meat & Protein',
+    grain: '🍞 Grains & Bread',
+    spice: '🧂 Spices & Seasonings',
+    condiment: '🍯 Condiments & Sauces',
+    fruit: '🍎 Fruits',
+    other: '📦 Other Items'
+  };
+
+  if (loading) {
+    return (
+      <div className="grocery-loading">
+        <ShoppingCart className="w-8 h-8 animate-bounce" />
+        <p>Loading your grocery lists...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grocery-list-page">
+      <div className="grocery-header">
+        <div className="grocery-header-content">
+          <Button
+            variant="outline"
+            onClick={onBack}
+            className="back-button"
+            data-testid="back-to-planner"
+          >
+            ← Back to Planner
+          </Button>
+          
+          <h1 className="grocery-title">
+            <ShoppingCart className="w-8 h-8" />
+            Grocery Lists
+          </h1>
+          
+          <div className="grocery-actions">
+            {currentList && (
+              <Button
+                variant="outline"
+                onClick={() => setShowShareDialog(true)}
+                data-testid="share-list-button"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share List
+              </Button>
+            )}
+            
+            {!currentList && (
+              <Button
+                onClick={createWeeklyGroceryList}
+                disabled={isCreating}
+                data-testid="create-grocery-list"
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Generate Weekly List
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grocery-content">
+        {!currentList ? (
+          <div className="empty-grocery-state">
+            <ShoppingCart className="w-16 h-16 text-orange-300" />
+            <h2>No Grocery List Yet</h2>
+            <p>Generate a grocery list from your weekly meal plan to get started!</p>
+            <Button
+              onClick={createWeeklyGroceryList}
+              disabled={isCreating}
+              size="lg"
+              data-testid="empty-state-create"
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Generating List...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-5 h-5 mr-2" />
+                  Generate Weekly Grocery List
+                </>
+              )}
+            </Button>
+          </div>
+        ) : (
+          <div className="grocery-list-container">
+            <div className="grocery-list-header">
+              <div className="list-info">
+                <h2>{currentList.name}</h2>
+                <p>{currentList.items?.length || 0} items total • {currentList.items?.filter(item => item.is_checked).length || 0} completed</p>
+              </div>
+              
+              <form onSubmit={addCustomItem} className="add-item-form">
+                <Input
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="Add custom item..."
+                  className="add-item-input"
+                  data-testid="add-item-input"
+                />
+                <Button type="submit" size="sm" data-testid="add-item-button">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </form>
+            </div>
+
+            <div className="grocery-categories" data-testid="grocery-categories">
+              {Object.entries(groupedItems).map(([category, items]) => (
+                <div key={category} className="grocery-category">
+                  <h3 className="category-header">
+                    {categoryDisplayNames[category] || `📦 ${category}`}
+                    <Badge variant="secondary" className="item-count">
+                      {items.length}
+                    </Badge>
+                  </h3>
+                  
+                  <div className="grocery-items">
+                    {items.map(item => (
+                      <GroceryListItem
+                        key={item.id}
+                        item={item}
+                        onToggleCheck={toggleItemCheck}
+                        onDelete={deleteItem}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Share Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Share Grocery List</DialogTitle>
+          </DialogHeader>
+          <div className="share-options">
+            <p>Share "{currentList?.name}" with family members or friends:</p>
+            <div className="share-methods">
+              <Button variant="outline" className="share-method">
+                <Users className="w-4 h-4 mr-2" />
+                Invite Collaborators
+              </Button>
+              <Button variant="outline" className="share-method">
+                📱 Copy Link
+              </Button>
+              <Button variant="outline" className="share-method">
+                📧 Email List
+              </Button>
+            </div>
+            <p className="share-note">
+              Collaborators can check off items and add new ones in real-time.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function GroceryListItem({ item, onToggleCheck, onDelete }) {
+  const [isChecked, setIsChecked] = useState(item.is_checked);
+
+  const handleToggle = (checked) => {
+    setIsChecked(checked);
+    onToggleCheck(item.id, checked);
+  };
+
+  return (
+    <div className={`grocery-item ${isChecked ? 'checked' : ''}`} data-testid={`grocery-item-${item.id}`}>
+      <div className="item-main">
+        <Checkbox
+          checked={isChecked}
+          onCheckedChange={handleToggle}
+          className="item-checkbox"
+          data-testid={`checkbox-${item.id}`}
+        />
+        
+        <div className="item-details">
+          <span className={`item-name ${isChecked ? 'line-through' : ''}`}>
+            {item.name}
+          </span>
+          {item.quantity && (
+            <span className="item-quantity">{item.quantity}</span>
+          )}
+          {item.notes && (
+            <span className="item-notes">{item.notes}</span>
+          )}
+        </div>
+      </div>
+      
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onDelete(item.id)}
+        className="delete-item-btn"
+        data-testid={`delete-item-${item.id}`}
+      >
+        <X className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
 function IngredientSearchInput({ ingredients, onIngredientsChange, required = false }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState([]);
