@@ -3,7 +3,7 @@ import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
 import { arrayMove, SortableContext } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, Edit2, Trash2, ChefHat, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, ChefHat, Sparkles, Loader2, X, Search } from 'lucide-react';
 import axios from "axios";
 import "./App.css";
 import { Button } from "./components/ui/button";
