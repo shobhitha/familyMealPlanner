@@ -242,6 +242,107 @@ async def get_family_members():
     """Get available family members"""
     return FAMILY_MEMBERS
 
+@api_router.post("/suggest-recipe", response_model=AIRecipeSuggestion)
+async def suggest_recipe_with_ai(request: RecipeSuggestionRequest):
+    """Generate AI recipe suggestions based on user prompt"""
+    try:
+        # Get the API key from environment
+        api_key = os.environ.get('EMERGENT_LLM_KEY')
+        if not api_key:
+            raise HTTPException(status_code=500, detail="AI service not configured")
+        
+        # Initialize the LLM chat
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"recipe-suggestion-{uuid.uuid4()}",
+            system_message="""You are a professional chef and recipe creator. Generate detailed, practical recipes based on user requests. 
+
+Your response must be a valid JSON object with the following structure:
+{
+    "name": "Recipe Name",
+    "ingredients": ["ingredient 1", "ingredient 2", "ingredient 3"],
+    "recipe": "Step-by-step cooking instructions...",
+    "suggested_family_preferences": ["dad", "mom", "brother", "sister", "baby", "grandpa", "grandma"],
+    "cuisine_type": "Italian/Asian/Mexican/American/etc or null",
+    "difficulty_level": "easy/medium/hard",
+    "cooking_time": "X minutes/hours"
+}
+
+Guidelines:
+1. Create realistic, achievable recipes
+2. Provide clear step-by-step instructions
+3. Suggest family preferences based on typical appeal (kids usually like simpler foods, adults might enjoy more complex flavors)
+4. Include appropriate difficulty and time estimates
+5. Make ingredients specific and measurable
+6. Only respond with valid JSON, no additional text"""
+        ).with_model("openai", "gpt-4o-mini")
+        
+        # Build the prompt based on request
+        prompt_parts = [f"Create a recipe for: {request.prompt}"]
+        
+        if request.dietary_preferences:
+            prompt_parts.append(f"Dietary requirements: {', '.join(request.dietary_preferences)}")
+            
+        if request.cuisine_type:
+            prompt_parts.append(f"Cuisine style: {request.cuisine_type}")
+            
+        if request.difficulty_level:
+            prompt_parts.append(f"Difficulty level: {request.difficulty_level}")
+        
+        full_prompt = ". ".join(prompt_parts)
+        
+        # Create user message
+        user_message = UserMessage(text=full_prompt)
+        
+        # Get AI response
+        response = await chat.send_message(user_message)
+        
+        # Parse the JSON response
+        try:
+            recipe_data = json.loads(response)
+            return AIRecipeSuggestion(**recipe_data)
+        except json.JSONDecodeError as e:
+            # If JSON parsing fails, try to extract JSON from response
+            import re
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                recipe_data = json.loads(json_match.group())
+                return AIRecipeSuggestion(**recipe_data)
+            else:
+                raise HTTPException(status_code=500, detail="Failed to parse AI response")
+                
+    except Exception as e:
+        logger.error(f"AI recipe suggestion error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate recipe suggestion: {str(e)}")
+
+@api_router.post("/create-meal-from-suggestion", response_model=Meal)
+async def create_meal_from_ai_suggestion(suggestion: AIRecipeSuggestion):
+    """Create a meal from AI recipe suggestion"""
+    try:
+        # Validate required fields
+        if not suggestion.name or not suggestion.name.strip():
+            raise HTTPException(status_code=422, detail="Meal name is required")
+        if not suggestion.ingredients or len(suggestion.ingredients) == 0:
+            raise HTTPException(status_code=422, detail="At least one ingredient is required")
+        if not suggestion.recipe or not suggestion.recipe.strip():
+            raise HTTPException(status_code=422, detail="Recipe is required")
+        
+        # Create meal from AI suggestion
+        meal_obj = Meal(
+            name=suggestion.name,
+            ingredients=suggestion.ingredients,
+            recipe=suggestion.recipe,
+            family_preferences=suggestion.suggested_family_preferences
+        )
+        
+        meal_data = prepare_for_mongo(meal_obj.dict())
+        await db.meals.insert_one(meal_data)
+        return meal_obj
+        
+    except Exception as e:
+        logger.error(f"Failed to create meal from suggestion: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create meal from suggestion")
+
 # Include the router in the main app
 app.include_router(api_router)
 
