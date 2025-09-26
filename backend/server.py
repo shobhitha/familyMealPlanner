@@ -283,23 +283,259 @@ async def delete_meal(meal_id: str):
 
 # Meal Plan endpoints
 @api_router.get("/meal-plans", response_model=List[MealPlan])
-async def get_meal_plans(week_start: Optional[str] = None):
-    """Get meal plans, optionally filtered by week"""
+async def get_meal_plans(week_start: Optional[str] = None, start_date: Optional[str] = None, end_date: Optional[str] = None):
+    """Get meal plans, optionally filtered by week or date range"""
     query = {}
+    
     if week_start:
         # Get meal plans for the week starting from week_start
         from datetime import datetime, timedelta
-        start_date = datetime.fromisoformat(week_start).date()
-        end_date = start_date + timedelta(days=6)
+        start_date_obj = datetime.fromisoformat(week_start).date()
+        end_date_obj = start_date_obj + timedelta(days=6)
         query = {
             "date": {
-                "$gte": start_date.isoformat(),
-                "$lte": end_date.isoformat()
+                "$gte": start_date_obj.isoformat(),
+                "$lte": end_date_obj.isoformat()
+            }
+        }
+    elif start_date and end_date:
+        # Get meal plans for specified date range
+        query = {
+            "date": {
+                "$gte": start_date,
+                "$lte": end_date
             }
         }
     
-    meal_plans = await db.meal_plans.find(query).to_list(1000)
+    meal_plans = await db.meal_plans.find(query).sort("date", 1).to_list(1000)
     return [MealPlan(**parse_from_mongo(plan)) for plan in meal_plans]
+
+@api_router.get("/meal-plans/month/{year}/{month}", response_model=List[MealPlan])
+async def get_meal_plans_by_month(year: int, month: int):
+    """Get all meal plans for a specific month"""
+    try:
+        from calendar import monthrange
+        import datetime
+        
+        # Get first and last day of the month
+        first_day = datetime.date(year, month, 1)
+        last_day_num = monthrange(year, month)[1]
+        last_day = datetime.date(year, month, last_day_num)
+        
+        query = {
+            "date": {
+                "$gte": first_day.isoformat(),
+                "$lte": last_day.isoformat()
+            }
+        }
+        
+        meal_plans = await db.meal_plans.find(query).sort("date", 1).to_list(1000)
+        return [MealPlan(**parse_from_mongo(plan)) for plan in meal_plans]
+        
+    except Exception as e:
+        logger.error(f"Failed to get monthly meal plans: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get monthly meal plans")
+
+@api_router.post("/meal-plans/copy-week")
+async def copy_meal_plan_week(copy_request: MealPlanCopy):
+    """Copy meal plans from one week to another"""
+    try:
+        from datetime import datetime, timedelta
+        
+        # Get source week meal plans
+        source_start = datetime.fromisoformat(copy_request.source_week_start).date()
+        source_end = source_start + timedelta(days=6)
+        
+        source_plans = await db.meal_plans.find({
+            "date": {
+                "$gte": source_start.isoformat(),
+                "$lte": source_end.isoformat()
+            }
+        }).to_list(100)
+        
+        if not source_plans:
+            raise HTTPException(status_code=404, detail="No meal plans found for source week")
+        
+        # Calculate date difference
+        target_start = datetime.fromisoformat(copy_request.target_week_start).date()
+        date_diff = (target_start - source_start).days
+        
+        copied_count = 0
+        skipped_count = 0
+        
+        for source_plan in source_plans:
+            # Calculate target date
+            source_date = datetime.fromisoformat(source_plan['date']).date()
+            target_date = source_date + timedelta(days=date_diff)
+            
+            # Check if target date already has a meal plan
+            existing_target = await db.meal_plans.find_one({"date": target_date.isoformat()})
+            
+            if existing_target and not copy_request.overwrite_existing:
+                skipped_count += 1
+                continue
+            
+            # Create new meal plan for target date
+            new_plan = MealPlan(
+                date=target_date.isoformat(),
+                breakfast=source_plan.get('breakfast'),
+                morning_snack=source_plan.get('morning_snack'),
+                lunch=source_plan.get('lunch'),
+                dinner=source_plan.get('dinner'),
+                evening_snack=source_plan.get('evening_snack')
+            )
+            
+            # Save to database
+            plan_data = prepare_for_mongo(new_plan.dict())
+            if existing_target:
+                await db.meal_plans.replace_one({"date": target_date.isoformat()}, plan_data)
+            else:
+                await db.meal_plans.insert_one(plan_data)
+            
+            copied_count += 1
+        
+        return {
+            "message": f"Successfully copied {copied_count} meal plans, skipped {skipped_count}",
+            "copied_count": copied_count,
+            "skipped_count": skipped_count,
+            "source_week": copy_request.source_week_start,
+            "target_week": copy_request.target_week_start
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to copy meal plan week: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to copy meal plan week")
+
+@api_router.post("/meal-plans/copy-month")
+async def copy_meal_plan_month(copy_request: MonthlyMealPlanCopy):
+    """Copy meal plans from one month to another"""
+    try:
+        from calendar import monthrange
+        import datetime
+        
+        # Parse source and target months
+        source_year, source_month = map(int, copy_request.source_month.split('-'))
+        target_year, target_month = map(int, copy_request.target_month.split('-'))
+        
+        # Get source month date range
+        source_first = datetime.date(source_year, source_month, 1)
+        source_last_day = monthrange(source_year, source_month)[1]
+        source_last = datetime.date(source_year, source_month, source_last_day)
+        
+        # Get target month date range
+        target_first = datetime.date(target_year, target_month, 1)
+        target_last_day = monthrange(target_year, target_month)[1]
+        target_last = datetime.date(target_year, target_month, target_last_day)
+        
+        # Get source month meal plans
+        source_plans = await db.meal_plans.find({
+            "date": {
+                "$gte": source_first.isoformat(),
+                "$lte": source_last.isoformat()
+            }
+        }).to_list(1000)
+        
+        if not source_plans:
+            raise HTTPException(status_code=404, detail="No meal plans found for source month")
+        
+        copied_count = 0
+        skipped_count = 0
+        
+        for source_plan in source_plans:
+            source_date = datetime.fromisoformat(source_plan['date']).date()
+            source_day = source_date.day
+            
+            # Skip if target month doesn't have this day (e.g., Feb 29, 30, 31)
+            if source_day > target_last_day:
+                skipped_count += 1
+                continue
+                
+            target_date = datetime.date(target_year, target_month, source_day)
+            
+            # Check if target date already has a meal plan
+            existing_target = await db.meal_plans.find_one({"date": target_date.isoformat()})
+            
+            if existing_target and not copy_request.overwrite_existing:
+                skipped_count += 1
+                continue
+            
+            # Create new meal plan for target date
+            new_plan = MealPlan(
+                date=target_date.isoformat(),
+                breakfast=source_plan.get('breakfast'),
+                morning_snack=source_plan.get('morning_snack'),
+                lunch=source_plan.get('lunch'),
+                dinner=source_plan.get('dinner'),
+                evening_snack=source_plan.get('evening_snack')
+            )
+            
+            # Save to database
+            plan_data = prepare_for_mongo(new_plan.dict())
+            if existing_target:
+                await db.meal_plans.replace_one({"date": target_date.isoformat()}, plan_data)
+            else:
+                await db.meal_plans.insert_one(plan_data)
+            
+            copied_count += 1
+        
+        return {
+            "message": f"Successfully copied {copied_count} meal plans, skipped {skipped_count}",
+            "copied_count": copied_count,
+            "skipped_count": skipped_count,
+            "source_month": copy_request.source_month,
+            "target_month": copy_request.target_month
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to copy meal plan month: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to copy meal plan month")
+
+@api_router.get("/meal-plans/weeks-with-plans", response_model=List[str])
+async def get_weeks_with_meal_plans():
+    """Get list of week start dates that have meal plans"""
+    try:
+        from datetime import datetime, timedelta
+        
+        # Get all meal plans and group by week
+        all_plans = await db.meal_plans.find().sort("date", 1).to_list(10000)
+        
+        weeks_set = set()
+        for plan in all_plans:
+            plan_date = datetime.fromisoformat(plan['date']).date()
+            # Calculate Monday of that week
+            monday = plan_date - timedelta(days=plan_date.weekday())
+            weeks_set.add(monday.isoformat())
+        
+        return sorted(list(weeks_set))
+        
+    except Exception as e:
+        logger.error(f"Failed to get weeks with meal plans: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get weeks with meal plans")
+
+@api_router.get("/meal-plans/months-with-plans", response_model=List[str])
+async def get_months_with_meal_plans():
+    """Get list of months (YYYY-MM) that have meal plans"""
+    try:
+        from datetime import datetime
+        
+        # Get all meal plans and group by month
+        all_plans = await db.meal_plans.find().sort("date", 1).to_list(10000)
+        
+        months_set = set()
+        for plan in all_plans:
+            plan_date = datetime.fromisoformat(plan['date']).date()
+            month_str = f"{plan_date.year:04d}-{plan_date.month:02d}"
+            months_set.add(month_str)
+        
+        return sorted(list(months_set))
+        
+    except Exception as e:
+        logger.error(f"Failed to get months with meal plans: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get months with meal plans")
 
 @api_router.get("/meal-plans/{date}", response_model=MealPlan)
 async def get_meal_plan_by_date(date: str):
