@@ -299,6 +299,139 @@ async def get_family_members():
     """Get available family members"""
     return FAMILY_MEMBERS
 
+# Ingredient endpoints
+@api_router.post("/ingredients/search", response_model=List[Ingredient])
+async def search_ingredients(search: IngredientSearch):
+    """Search for ingredients based on query"""
+    try:
+        # Create a case-insensitive regex pattern
+        pattern = {"$regex": search.query.strip(), "$options": "i"}
+        
+        # Search in ingredients collection
+        query = {"name": pattern}
+        
+        # Sort by usage_count (descending) and then by name
+        ingredients = await db.ingredients.find(query).sort([
+            ("usage_count", -1),  # Most used first
+            ("is_common", -1),    # Common ingredients first for equal usage
+            ("name", 1)           # Alphabetical for same usage/common status
+        ]).limit(search.limit).to_list(search.limit)
+        
+        return [Ingredient(**parse_from_mongo(ingredient)) for ingredient in ingredients]
+        
+    except Exception as e:
+        logger.error(f"Failed to search ingredients: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to search ingredients")
+
+@api_router.post("/ingredients", response_model=Ingredient)
+async def create_or_increment_ingredient(ingredient_input: IngredientCreate):
+    """Create a new ingredient or increment usage count if it exists"""
+    try:
+        # Validate ingredient name
+        if not ingredient_input.name or not ingredient_input.name.strip():
+            raise HTTPException(status_code=422, detail="Ingredient name is required")
+        
+        ingredient_name = ingredient_input.name.strip().title()  # Normalize name
+        
+        # Check if ingredient already exists (case-insensitive)
+        existing = await db.ingredients.find_one({
+            "name": {"$regex": f"^{ingredient_name}$", "$options": "i"}
+        })
+        
+        if existing:
+            # Increment usage count
+            await db.ingredients.update_one(
+                {"id": existing["id"]},
+                {"$inc": {"usage_count": 1}}
+            )
+            existing["usage_count"] += 1
+            return Ingredient(**parse_from_mongo(existing))
+        else:
+            # Create new ingredient
+            new_ingredient = Ingredient(
+                name=ingredient_name,
+                category=ingredient_input.category,
+                is_common=False,
+                usage_count=1
+            )
+            
+            ingredient_data = prepare_for_mongo(new_ingredient.dict())
+            await db.ingredients.insert_one(ingredient_data)
+            return new_ingredient
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to create/increment ingredient: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create ingredient")
+
+@api_router.get("/ingredients/popular", response_model=List[Ingredient])
+async def get_popular_ingredients(limit: int = 20):
+    """Get most popular/frequently used ingredients"""
+    try:
+        ingredients = await db.ingredients.find().sort([
+            ("usage_count", -1),
+            ("is_common", -1),
+            ("name", 1)
+        ]).limit(limit).to_list(limit)
+        
+        return [Ingredient(**parse_from_mongo(ingredient)) for ingredient in ingredients]
+        
+    except Exception as e:
+        logger.error(f"Failed to get popular ingredients: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get popular ingredients")
+
+@api_router.post("/ingredients/seed")
+async def seed_common_ingredients():
+    """Seed the database with common ingredients (admin function)"""
+    try:
+        seeded_count = 0
+        
+        for ingredient_name in COMMON_INGREDIENTS:
+            # Check if ingredient already exists
+            existing = await db.ingredients.find_one({
+                "name": {"$regex": f"^{ingredient_name}$", "$options": "i"}
+            })
+            
+            if not existing:
+                # Categorize ingredients (simple categorization)
+                category = None
+                if ingredient_name.lower() in ["salt", "black pepper", "cumin", "paprika", "oregano", "thyme", "basil", "parsley", "bay leaves", "ginger"]:
+                    category = "spice"
+                elif ingredient_name.lower() in ["chicken breast", "ground beef", "salmon", "shrimp", "tuna", "cod", "beef steak", "pork chops", "bacon", "ham"]:
+                    category = "protein"
+                elif ingredient_name.lower() in ["carrots", "potatoes", "bell peppers", "mushrooms", "spinach", "broccoli", "lettuce", "cucumber", "green beans", "zucchini", "eggplant", "corn", "peas", "celery", "avocado"]:
+                    category = "vegetable"
+                elif ingredient_name.lower() in ["milk", "butter", "cheese", "heavy cream", "yogurt", "parmesan cheese", "mozzarella cheese", "cheddar cheese"]:
+                    category = "dairy"
+                elif ingredient_name.lower() in ["apples", "bananas", "strawberries", "blueberries", "oranges", "lemons", "limes"]:
+                    category = "fruit"
+                elif ingredient_name.lower() in ["flour", "sugar", "rice", "pasta", "bread", "brown sugar"]:
+                    category = "grain"
+                elif ingredient_name.lower() in ["olive oil", "coconut oil", "sesame oil"]:
+                    category = "oil"
+                elif ingredient_name.lower() in ["chicken stock", "vegetable stock", "soy sauce", "vinegar", "honey"]:
+                    category = "condiment"
+                elif ingredient_name.lower() in ["almonds", "walnuts", "pine nuts", "cashews", "peanuts"]:
+                    category = "nut"
+                
+                ingredient = Ingredient(
+                    name=ingredient_name,
+                    category=category,
+                    is_common=True,
+                    usage_count=0
+                )
+                
+                ingredient_data = prepare_for_mongo(ingredient.dict())
+                await db.ingredients.insert_one(ingredient_data)
+                seeded_count += 1
+        
+        return {"message": f"Seeded {seeded_count} common ingredients"}
+        
+    except Exception as e:
+        logger.error(f"Failed to seed ingredients: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to seed ingredients")
+
 @api_router.post("/suggest-recipe", response_model=AIRecipeSuggestion)
 async def suggest_recipe_with_ai(request: RecipeSuggestionRequest):
     """Generate AI recipe suggestions based on user prompt"""
