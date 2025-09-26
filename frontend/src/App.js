@@ -1934,7 +1934,7 @@ function App() {
     }
   };
 
-  const handleRemoveMeal = async (date, slot) => {
+  const handleMealRemove = async (date, slot) => {
     try {
       await axios.put(`${API}/meal-plans/${date}`, {
         meal_slot: slot,
