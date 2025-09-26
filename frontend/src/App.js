@@ -616,6 +616,38 @@ function App() {
     }
   };
 
+  const handleAIRecipeSuggestion = async (requestData) => {
+    try {
+      setAiLoading(true);
+      const response = await axios.post(`${API}/suggest-recipe`, requestData);
+      setAiSuggestion(response.data);
+      toast.success('Recipe suggestion generated!');
+    } catch (error) {
+      console.error('Failed to generate recipe suggestion:', error);
+      toast.error('Failed to generate recipe suggestion');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleAcceptAISuggestion = async (suggestion) => {
+    try {
+      const response = await axios.post(`${API}/create-meal-from-suggestion`, suggestion);
+      setMeals(prev => [...prev, response.data]);
+      setAiSuggestion(null);
+      setIsAISuggestionOpen(false);
+      toast.success('AI recipe added to your meals!');
+    } catch (error) {
+      console.error('Failed to create meal from AI suggestion:', error);
+      toast.error('Failed to add AI recipe');
+    }
+  };
+
+  const handleRegenerateAISuggestion = () => {
+    setAiSuggestion(null);
+    // Keep the modal open for user to try again
+  };
+
   const handleDragStart = (event) => {
     setActiveId(event.active.id);
   };
