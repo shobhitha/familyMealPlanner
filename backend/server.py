@@ -488,6 +488,247 @@ async def seed_common_ingredients():
         logger.error(f"Failed to seed ingredients: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to seed ingredients")
 
+# Grocery List endpoints
+@api_router.post("/grocery-lists", response_model=GroceryList)
+async def create_grocery_list(grocery_list_input: GroceryListCreate):
+    """Create a new grocery list, optionally auto-populated from meal plans"""
+    try:
+        grocery_list = GroceryList(
+            name=grocery_list_input.name,
+            week_start_date=grocery_list_input.week_start_date
+        )
+        
+        if grocery_list_input.auto_generate:
+            # Get meal plans for the week
+            from datetime import datetime, timedelta
+            start_date = datetime.fromisoformat(grocery_list_input.week_start_date).date()
+            end_date = start_date + timedelta(days=6)
+            
+            # Fetch meal plans for the week
+            meal_plans = await db.meal_plans.find({
+                "date": {
+                    "$gte": start_date.isoformat(),
+                    "$lte": end_date.isoformat()
+                }
+            }).to_list(1000)
+            
+            # Collect all meal IDs from the week
+            meal_ids = set()
+            for plan in meal_plans:
+                for slot in ['breakfast', 'morning_snack', 'lunch', 'dinner', 'evening_snack']:
+                    if plan.get(slot):
+                        meal_ids.add(plan[slot])
+            
+            # Get all meals for the week
+            meals = await db.meals.find({"id": {"$in": list(meal_ids)}}).to_list(1000)
+            
+            # Collect all ingredients with categorization
+            ingredient_count = {}
+            for meal in meals:
+                for ingredient_name in meal.get('ingredients', []):
+                    # Find ingredient category from ingredients database
+                    ingredient_doc = await db.ingredients.find_one({
+                        "name": {"$regex": f"^{ingredient_name}$", "$options": "i"}
+                    })
+                    
+                    category = "other"
+                    if ingredient_doc:
+                        category = ingredient_doc.get('category', 'other')
+                    
+                    # Count occurrences and group by category
+                    key = (ingredient_name, category)
+                    if key not in ingredient_count:
+                        ingredient_count[key] = {
+                            'count': 0,
+                            'recipes': []
+                        }
+                    ingredient_count[key]['count'] += 1
+                    ingredient_count[key]['recipes'].append(meal.get('name', 'Unknown Recipe'))
+            
+            # Create grocery items from ingredients
+            for (ingredient_name, category), data in ingredient_count.items():
+                quantity_note = f"Used in {data['count']} recipe{'s' if data['count'] > 1 else ''}"
+                recipe_note = f"For: {', '.join(set(data['recipes'][:3]))}"  # Show max 3 recipes
+                if len(data['recipes']) > 3:
+                    recipe_note += f" +{len(data['recipes']) - 3} more"
+                
+                grocery_item = GroceryItem(
+                    name=ingredient_name,
+                    category=category if category != 'other' else categorize_ingredient(ingredient_name),
+                    quantity=quantity_note if data['count'] > 1 else None,
+                    notes=recipe_note,
+                    from_recipe="auto_generated"
+                )
+                grocery_list.items.append(grocery_item)
+        
+        # Sort items by category for better organization
+        category_order = ["produce", "dairy", "protein", "grain", "spice", "condiment", "oil", "fruit", "nut", "other"]
+        grocery_list.items.sort(key=lambda x: (
+            category_order.index(x.category) if x.category in category_order else len(category_order),
+            x.name.lower()
+        ))
+        
+        # Save to database
+        grocery_data = prepare_for_mongo(grocery_list.dict())
+        await db.grocery_lists.insert_one(grocery_data)
+        
+        return grocery_list
+        
+    except Exception as e:
+        logger.error(f"Failed to create grocery list: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create grocery list")
+
+@api_router.get("/grocery-lists", response_model=List[GroceryList])
+async def get_grocery_lists():
+    """Get all grocery lists"""
+    try:
+        grocery_lists = await db.grocery_lists.find().sort("created_at", -1).to_list(1000)
+        return [GroceryList(**parse_from_mongo(gl)) for gl in grocery_lists]
+    except Exception as e:
+        logger.error(f"Failed to get grocery lists: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get grocery lists")
+
+@api_router.get("/grocery-lists/{list_id}", response_model=GroceryList)
+async def get_grocery_list(list_id: str):
+    """Get a specific grocery list"""
+    try:
+        grocery_list = await db.grocery_lists.find_one({"id": list_id})
+        if not grocery_list:
+            raise HTTPException(status_code=404, detail="Grocery list not found")
+        return GroceryList(**parse_from_mongo(grocery_list))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get grocery list: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get grocery list")
+
+@api_router.put("/grocery-lists/{list_id}/items/{item_id}", response_model=GroceryList)
+async def update_grocery_item(list_id: str, item_id: str, item_update: GroceryItemUpdate):
+    """Update a specific grocery item"""
+    try:
+        grocery_list = await db.grocery_lists.find_one({"id": list_id})
+        if not grocery_list:
+            raise HTTPException(status_code=404, detail="Grocery list not found")
+        
+        # Find and update the item
+        items = grocery_list.get('items', [])
+        item_found = False
+        for item in items:
+            if item.get('id') == item_id:
+                # Update item fields
+                if item_update.name is not None:
+                    item['name'] = item_update.name
+                if item_update.category is not None:
+                    item['category'] = item_update.category
+                if item_update.is_checked is not None:
+                    item['is_checked'] = item_update.is_checked
+                if item_update.quantity is not None:
+                    item['quantity'] = item_update.quantity
+                if item_update.notes is not None:
+                    item['notes'] = item_update.notes
+                item_found = True
+                break
+        
+        if not item_found:
+            raise HTTPException(status_code=404, detail="Grocery item not found")
+        
+        # Update last_updated timestamp
+        grocery_list['last_updated'] = datetime.now(timezone.utc).isoformat()
+        
+        # Save to database
+        await db.grocery_lists.replace_one({"id": list_id}, prepare_for_mongo(grocery_list))
+        
+        return GroceryList(**parse_from_mongo(grocery_list))
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update grocery item: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update grocery item")
+
+@api_router.post("/grocery-lists/{list_id}/items", response_model=GroceryList)
+async def add_grocery_item(list_id: str, item_input: GroceryItemCreate):
+    """Add a new item to grocery list"""
+    try:
+        grocery_list = await db.grocery_lists.find_one({"id": list_id})
+        if not grocery_list:
+            raise HTTPException(status_code=404, detail="Grocery list not found")
+        
+        # Create new grocery item
+        new_item = GroceryItem(
+            name=item_input.name,
+            category=item_input.category or categorize_ingredient(item_input.name),
+            quantity=item_input.quantity,
+            notes=item_input.notes,
+            added_by="user"
+        )
+        
+        # Add to items list
+        if 'items' not in grocery_list:
+            grocery_list['items'] = []
+        grocery_list['items'].append(prepare_for_mongo(new_item.dict()))
+        
+        # Update last_updated timestamp
+        grocery_list['last_updated'] = datetime.now(timezone.utc).isoformat()
+        
+        # Save to database
+        await db.grocery_lists.replace_one({"id": list_id}, prepare_for_mongo(grocery_list))
+        
+        return GroceryList(**parse_from_mongo(grocery_list))
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to add grocery item: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to add grocery item")
+
+@api_router.delete("/grocery-lists/{list_id}/items/{item_id}", response_model=GroceryList)
+async def delete_grocery_item(list_id: str, item_id: str):
+    """Delete a grocery item"""
+    try:
+        grocery_list = await db.grocery_lists.find_one({"id": list_id})
+        if not grocery_list:
+            raise HTTPException(status_code=404, detail="Grocery list not found")
+        
+        # Filter out the item to delete
+        items = grocery_list.get('items', [])
+        grocery_list['items'] = [item for item in items if item.get('id') != item_id]
+        
+        # Update last_updated timestamp
+        grocery_list['last_updated'] = datetime.now(timezone.utc).isoformat()
+        
+        # Save to database
+        await db.grocery_lists.replace_one({"id": list_id}, prepare_for_mongo(grocery_list))
+        
+        return GroceryList(**parse_from_mongo(grocery_list))
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete grocery item: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete grocery item")
+
+def categorize_ingredient(ingredient_name: str) -> str:
+    """Helper function to categorize ingredients"""
+    name_lower = ingredient_name.lower()
+    
+    if any(word in name_lower for word in ["tomato", "lettuce", "spinach", "carrot", "pepper", "onion", "garlic", "cucumber", "broccoli", "celery", "mushroom", "avocado", "potato"]):
+        return "produce"
+    elif any(word in name_lower for word in ["milk", "cheese", "butter", "cream", "yogurt"]):
+        return "dairy"
+    elif any(word in name_lower for word in ["chicken", "beef", "pork", "fish", "salmon", "shrimp", "egg"]):
+        return "protein"
+    elif any(word in name_lower for word in ["flour", "rice", "pasta", "bread", "oat", "quinoa"]):
+        return "grain"
+    elif any(word in name_lower for word in ["salt", "pepper", "basil", "oregano", "thyme", "cumin", "paprika"]):
+        return "spice"
+    elif any(word in name_lower for word in ["oil", "vinegar", "sauce", "stock"]):
+        return "condiment"
+    elif any(word in name_lower for word in ["apple", "banana", "berry", "orange", "lemon", "lime"]):
+        return "fruit"
+    else:
+        return "other"
+
 @api_router.post("/suggest-recipe", response_model=AIRecipeSuggestion)
 async def suggest_recipe_with_ai(request: RecipeSuggestionRequest):
     """Generate AI recipe suggestions based on user prompt"""
