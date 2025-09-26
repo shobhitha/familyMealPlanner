@@ -1059,49 +1059,112 @@ body {
   .app-content {
     padding: 1rem;
   }
-  
-  .week-grid {
+
+  .meals-sidebar {
+    width: 100%;
+    max-height: 250px;
+    margin-bottom: 1rem;
+  }
+
+  .meals-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    max-height: 200px;
+  }
+
+  .main-planner-view {
+    width: 100%;
+    padding: 1rem;
+  }
+
+  .date-range-filter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .date-inputs {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .filter-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .filter-actions button {
+    width: 100%;
+  }
+
+  .calendar-months {
     grid-template-columns: 1fr;
     gap: 1rem;
-    height: auto;
-  }
-  
-  .day-column {
-    min-height: auto;
+    max-height: 60vh;
   }
 
-  .weekly-planner-header {
-    gap: 0.75rem;
-  }
-
-  .planner-controls {
+  .calendar-nav {
     flex-direction: column;
-    width: 100%;
-    gap: 0.75rem;
+    gap: 1rem;
   }
 
-  .week-navigator {
+  .calendar-year {
+    font-size: 1.5rem;
+  }
+
+  .calendar-day {
+    font-size: 0.7rem;
+    padding: 0.15rem;
+  }
+
+  .meal-count {
+    font-size: 0.6rem;
+    padding: 0.05rem 0.2rem;
+  }
+
+  .day-detail-content {
+    max-height: 50vh;
+  }
+
+  .meal-slot-detail {
+    padding: 0.75rem;
+  }
+
+  .assigned-meal-detail {
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
-    text-align: center;
-  }
-
-  .nav-button {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .week-display {
-    min-width: auto;
-    width: 100%;
-  }
-
-  .mode-buttons {
-    flex-direction: column;
+    align-items: flex-start;
     gap: 0.75rem;
   }
-  
+
+  .table-meal-plan-view {
+    max-height: 60vh;
+  }
+
+  .meal-plan-table {
+    font-size: 0.75rem;
+  }
+
+  .meal-plan-table th,
+  .meal-plan-table td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  .meal-cell {
+    min-height: 50px;
+    max-width: 120px;
+  }
+
+  .meal-name {
+    font-size: 0.7rem;
+  }
+
   .family-selector {
     grid-template-columns: repeat(2, 1fr);
   }
