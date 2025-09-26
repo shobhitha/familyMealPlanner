@@ -1,8 +1,8 @@
-# 🍽️ Family Meal Planner
+# 🍽️ Happy Gut
 
 A comprehensive, AI-powered meal planning application that helps families organize their weekly meals with intelligent features, drag-and-drop functionality, smart ingredient search, and personalized family preferences.
 
-![Family Meal Planner](https://img.shields.io/badge/React-19.0.0-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.110.1-green) ![MongoDB](https://img.shields.io/badge/MongoDB-4.5.0-brightgreen) ![AI Powered](https://img.shields.io/badge/AI-Powered-purple)
+![Happy Gut](https://img.shields.io/badge/React-19.0.0-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.110.1-green) ![MongoDB](https://img.shields.io/badge/MongoDB-4.5.0-brightgreen) ![AI Powered](https://img.shields.io/badge/AI-Powered-purple)
 
 ## ✨ Key Features
 
