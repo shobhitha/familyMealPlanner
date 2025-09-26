@@ -184,6 +184,8 @@ A comprehensive meal planning application that helps families organize their wee
 
 ### Family Members
 - `GET /api/family-members` - Get available family member emojis
+- `POST /api/suggest-recipe` - Generate AI recipe suggestions based on user prompt
+- `POST /api/create-meal-from-suggestion` - Create meal from AI recipe suggestion
 
 ## 🗄️ Data Models
 
