@@ -504,7 +504,7 @@ function AIRecipePreview({ suggestion, onAccept, onRegenerate, onCancel, familyM
 function MealForm({ meal, onSave, onCancel, familyMembers }) {
   const [formData, setFormData] = useState({
     name: meal?.name || '',
-    ingredients: meal?.ingredients?.join('\n') || '',
+    ingredients: meal?.ingredients || [],
     recipe: meal?.recipe || '',
     family_preferences: meal?.family_preferences || []
   });
@@ -517,8 +517,8 @@ function MealForm({ meal, onSave, onCancel, familyMembers }) {
     if (!formData.name.trim()) {
       errors.push("Meal name is required");
     }
-    if (!formData.ingredients.trim()) {
-      errors.push("Ingredients are required");
+    if (!formData.ingredients || formData.ingredients.length === 0) {
+      errors.push("At least one ingredient is required");
     }
     
     // Show error for first validation failure
@@ -535,7 +535,7 @@ function MealForm({ meal, onSave, onCancel, familyMembers }) {
 
     onSave({
       ...formData,
-      ingredients: formData.ingredients.split('\n').filter(ing => ing.trim())
+      ingredients: formData.ingredients // No need to filter as IngredientSearchInput handles this
     });
   };
 
@@ -569,18 +569,13 @@ function MealForm({ meal, onSave, onCancel, familyMembers }) {
       </div>
       
       <div className="form-group">
-        <Label htmlFor="ingredients">
-          Ingredients (one per line) <span className="required-asterisk">*</span>
+        <Label>
+          Ingredients <span className="required-asterisk">*</span>
         </Label>
-        <Textarea
-          id="ingredients"
-          value={formData.ingredients}
-          onChange={(e) => setFormData(prev => ({ ...prev, ingredients: e.target.value }))}
-          placeholder="Chicken breast&#10;Olive oil&#10;Salt and pepper"
-          rows={4}
-          data-testid="ingredients-input"
-          required
-          className={!formData.ingredients.trim() ? 'error-border' : ''}
+        <IngredientSearchInput
+          ingredients={formData.ingredients}
+          onIngredientsChange={(ingredients) => setFormData(prev => ({ ...prev, ingredients }))}
+          required={true}
         />
       </div>
 
