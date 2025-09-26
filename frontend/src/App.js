@@ -1311,16 +1311,24 @@ function App() {
   // Load initial data
   useEffect(() => {
     loadData();
+    loadAvailableWeeks();
   }, []);
+
+  // Load data when week changes
+  useEffect(() => {
+    if (!loading) {
+      loadData();
+    }
+  }, [currentWeekStart]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       
-      // Load meals, meal plans, and family members
+      // Load meals, meal plans for current week, and family members
       const [mealsRes, plansRes, familyRes] = await Promise.all([
         axios.get(`${API}/meals`),
-        axios.get(`${API}/meal-plans?week_start=${weekDates[0]}`),
+        axios.get(`${API}/meal-plans?week_start=${currentWeekStart}`),
         axios.get(`${API}/family-members`)
       ]);
 
@@ -1340,6 +1348,20 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadAvailableWeeks = async () => {
+    try {
+      const response = await axios.get(`${API}/meal-plans/weeks-with-plans`);
+      setAvailableWeeks(response.data);
+    } catch (error) {
+      console.error('Failed to load available weeks:', error);
+    }
+  };
+
+  const handleWeekChange = (newWeekStart) => {
+    setCurrentWeekStart(newWeekStart);
+    setWeekDates(getWeekDatesFromStart(newWeekStart));
   };
 
   const handleCreateMeal = async (mealData) => {
