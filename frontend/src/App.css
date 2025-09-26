@@ -651,6 +651,38 @@ body {
   .day-column {
     min-height: auto;
   }
+
+  .weekly-planner-header {
+    gap: 0.75rem;
+  }
+
+  .planner-controls {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .week-navigator {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .nav-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .week-display {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .mode-buttons {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
   
   .family-selector {
     grid-template-columns: repeat(2, 1fr);
@@ -662,6 +694,15 @@ body {
 
   .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-actions button {
+    width: 100%;
   }
 }
 
