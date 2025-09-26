@@ -1659,7 +1659,24 @@ function App() {
 
           {/* Weekly Planner */}
           <div className="weekly-planner">
-            <h2>Weekly Meal Plan</h2>
+            <div className="weekly-planner-header">
+              <h2>Weekly Meal Plan</h2>
+              <div className="planner-controls">
+                <WeekNavigator
+                  currentWeekStart={currentWeekStart}
+                  onWeekChange={handleWeekChange}
+                  availableWeeks={availableWeeks}
+                />
+                <CopyMealPlanDialog
+                  currentWeekStart={currentWeekStart}
+                  availableWeeks={availableWeeks}
+                  onCopyComplete={() => {
+                    loadData();
+                    loadAvailableWeeks();
+                  }}
+                />
+              </div>
+            </div>
             <div className="week-grid" data-testid="week-grid">
               {DAYS.map((day, dayIndex) => (
                 <div key={day.key} className="day-column">
