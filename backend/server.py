@@ -150,7 +150,25 @@ async def update_meal(meal_id: str, meal_input: MealCreate):
     if not meal:
         raise HTTPException(status_code=404, detail="Meal not found")
     
-    updated_meal = Meal(id=meal_id, **meal_input.dict())
+    # Validate required fields with detailed error messages  
+    if not meal_input.name or not meal_input.name.strip():
+        raise HTTPException(status_code=422, detail="Meal name is required and cannot be empty")
+    if not meal_input.ingredients or len(meal_input.ingredients) == 0:
+        raise HTTPException(status_code=422, detail="At least one ingredient is required")
+    
+    # Check if ingredients list contains only empty strings
+    valid_ingredients = [ing.strip() for ing in meal_input.ingredients if ing.strip()]
+    if len(valid_ingredients) == 0:
+        raise HTTPException(status_code=422, detail="At least one valid ingredient is required")
+    
+    # Recipe is optional but if provided should not be empty
+    if meal_input.recipe and not meal_input.recipe.strip():
+        raise HTTPException(status_code=422, detail="Recipe cannot be empty if provided")
+    
+    meal_dict = meal_input.dict()
+    # Update ingredients to only include non-empty ones
+    meal_dict['ingredients'] = valid_ingredients
+    updated_meal = Meal(id=meal_id, **meal_dict)
     meal_data = prepare_for_mongo(updated_meal.dict())
     await db.meals.replace_one({"id": meal_id}, meal_data)
     return updated_meal
