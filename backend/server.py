@@ -37,6 +37,20 @@ FAMILY_MEMBERS = {
     "grandma": "👵"
 }
 
+# Common ingredients database (initial seed data)
+COMMON_INGREDIENTS = [
+    "Salt", "Black pepper", "Olive oil", "Butter", "Garlic", "Onion", "Tomatoes", "Chicken breast", 
+    "Ground beef", "Eggs", "Milk", "Flour", "Sugar", "Rice", "Pasta", "Bread", "Cheese", "Lemon",
+    "Carrots", "Potatoes", "Bell peppers", "Mushrooms", "Spinach", "Broccoli", "Lettuce", "Cucumber",
+    "Basil", "Oregano", "Thyme", "Parsley", "Ginger", "Cumin", "Paprika", "Bay leaves",
+    "Chicken stock", "Vegetable stock", "Soy sauce", "Vinegar", "Honey", "Brown sugar",
+    "Heavy cream", "Yogurt", "Parmesan cheese", "Mozzarella cheese", "Cheddar cheese",
+    "Salmon", "Shrimp", "Tuna", "Cod", "Beef steak", "Pork chops", "Bacon", "Ham",
+    "Green beans", "Zucchini", "Eggplant", "Corn", "Peas", "Celery", "Avocado",
+    "Apples", "Bananas", "Strawberries", "Blueberries", "Oranges", "Lemons", "Limes",
+    "Almonds", "Walnuts", "Pine nuts", "Cashews", "Peanuts", "Coconut oil", "Sesame oil"
+]
+
 # Define Models
 class Meal(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
