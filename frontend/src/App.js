@@ -489,10 +489,13 @@ function App() {
   const [mealPlans, setMealPlans] = useState({});
   const [familyMembers, setFamilyMembers] = useState({});
   const [isCreateMealOpen, setIsCreateMealOpen] = useState(false);
+  const [isAISuggestionOpen, setIsAISuggestionOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState(null);
   const [weekDates, setWeekDates] = useState(getCurrentWeekDates());
   const [activeId, setActiveId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
 
   // Load initial data
   useEffect(() => {
