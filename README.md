@@ -32,7 +32,7 @@ A comprehensive meal planning application that helps families organize their wee
   - 🍽️ **Dinner** - Evening meal
   - 🍪 **Evening Snack** - Night-time snack
 
-### 🤖 AI Recipe Suggestions
+### 🎯 Drag & Drop Functionality
 - **AI-Powered Recipe Generation**: Get recipe suggestions based on natural language prompts
 - **Smart Recipe Creation**: Ask for "healthy chicken dinner" or "vegetarian pasta for kids"
 - **Structured Recipe Output**: AI generates complete recipes with ingredients, instructions, and cooking details
