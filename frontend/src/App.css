@@ -480,6 +480,16 @@ body {
     gap: 1rem;
     text-align: center;
   }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .header-actions button {
+    width: 100%;
+  }
   
   .app-title {
     font-size: 1.5rem;
@@ -501,6 +511,14 @@ body {
   
   .family-selector {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .dietary-preferences-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
   }
 }
 
