@@ -122,7 +122,7 @@ A comprehensive, AI-powered meal planning application that helps families organi
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd family-meal-planner
+   cd happy-gut
    ```
 
 2. **Navigate to backend directory**
