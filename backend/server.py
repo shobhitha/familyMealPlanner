@@ -95,6 +95,14 @@ async def get_meals():
 @api_router.post("/meals", response_model=Meal)
 async def create_meal(meal_input: MealCreate):
     """Create a new meal"""
+    # Validate required fields
+    if not meal_input.name or not meal_input.name.strip():
+        raise HTTPException(status_code=422, detail="Meal name is required")
+    if not meal_input.ingredients or len(meal_input.ingredients) == 0:
+        raise HTTPException(status_code=422, detail="At least one ingredient is required")
+    if not meal_input.recipe or not meal_input.recipe.strip():
+        raise HTTPException(status_code=422, detail="Recipe is required")
+    
     meal_dict = meal_input.dict()
     meal_obj = Meal(**meal_dict)
     meal_data = prepare_for_mongo(meal_obj.dict())
