@@ -3,7 +3,7 @@ import { DndContext, DragOverlay, closestCenter } from '@dnd-kit/core';
 import { arrayMove, SortableContext } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, Edit2, Trash2, ChefHat } from 'lucide-react';
+import { Plus, Edit2, Trash2, ChefHat, Sparkles, Loader2 } from 'lucide-react';
 import axios from "axios";
 import "./App.css";
 import { Button } from "./components/ui/button";
@@ -13,6 +13,7 @@ import { Input } from "./components/ui/input";
 import { Textarea } from "./components/ui/textarea";
 import { Label } from "./components/ui/label";
 import { Badge } from "./components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
 import { toast, Toaster } from "./components/ui/sonner";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
