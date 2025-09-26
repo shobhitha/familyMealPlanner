@@ -1196,6 +1196,20 @@ function App() {
     );
   }
 
+  // Show grocery list page
+  if (currentView === 'grocery') {
+    return (
+      <div className="App">
+        <Toaster richColors position="top-right" />
+        <GroceryListPage 
+          weekDates={weekDates} 
+          onBack={() => setCurrentView('planner')} 
+        />
+      </div>
+    );
+  }
+
+  // Show main meal planner
   return (
     <div className="App">
       <Toaster richColors position="top-right" />
