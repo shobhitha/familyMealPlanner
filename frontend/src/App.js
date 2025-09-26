@@ -147,7 +147,304 @@ function DroppableMealSlot({ date, slot, meal, onMealDrop, onRemoveMeal }) {
   );
 }
 
-// Grocery List Components
+// Week Navigation and Copy Components
+function WeekNavigator({ currentWeekStart, onWeekChange, availableWeeks }) {
+  const formatWeekDisplay = (weekStartDate) => {
+    const date = new Date(weekStartDate);
+    const endDate = new Date(date);
+    endDate.setDate(date.getDate() + 6);
+    
+    return `${date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    })} - ${endDate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    })}`;
+  };
+
+  const navigateWeek = (direction) => {
+    const currentDate = new Date(currentWeekStart);
+    const newDate = new Date(currentDate);
+    newDate.setDate(currentDate.getDate() + (direction * 7));
+    onWeekChange(newDate.toISOString().split('T')[0]);
+  };
+
+  const isCurrentWeek = () => {
+    const today = new Date();
+    const monday = new Date(today);
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+    monday.setDate(diff);
+    return currentWeekStart === monday.toISOString().split('T')[0];
+  };
+
+  return (
+    <div className="week-navigator">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => navigateWeek(-1)}
+        className="nav-button"
+        data-testid="prev-week"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Previous
+      </Button>
+      
+      <div className="week-display">
+        <div className="week-date-range">
+          {formatWeekDisplay(currentWeekStart)}
+        </div>
+        {isCurrentWeek() && (
+          <Badge variant="secondary" className="current-week-badge">
+            This Week
+          </Badge>
+        )}
+        {availableWeeks.includes(currentWeekStart) && (
+          <Badge variant="default" className="has-meals-badge">
+            <Clock className="w-3 h-3 mr-1" />
+            Has Meals
+          </Badge>
+        )}
+      </div>
+      
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => navigateWeek(1)}
+        className="nav-button"
+        data-testid="next-week"
+      >
+        Next
+        <ChevronRight className="w-4 h-4" />
+      </Button>
+    </div>
+  );
+}
+
+function CopyMealPlanDialog({ currentWeekStart, availableWeeks, onCopyComplete }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [copyMode, setCopyMode] = useState('week'); // 'week' or 'month'
+  const [sourceWeek, setSourceWeek] = useState('');
+  const [sourceMonth, setSourceMonth] = useState('');
+  const [overwriteExisting, setOverwriteExisting] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [availableMonths, setAvailableMonths] = useState([]);
+
+  useEffect(() => {
+    if (isOpen && copyMode === 'month') {
+      loadAvailableMonths();
+    }
+  }, [isOpen, copyMode]);
+
+  const loadAvailableMonths = async () => {
+    try {
+      const response = await axios.get(`${API}/meal-plans/months-with-plans`);
+      setAvailableMonths(response.data);
+    } catch (error) {
+      console.error('Failed to load available months:', error);
+    }
+  };
+
+  const handleCopyWeek = async () => {
+    if (!sourceWeek) {
+      toast.error('Please select a source week');
+      return;
+    }
+
+    try {
+      setCopying(true);
+      const response = await axios.post(`${API}/meal-plans/copy-week`, {
+        source_week_start: sourceWeek,
+        target_week_start: currentWeekStart,
+        overwrite_existing: overwriteExisting
+      });
+      
+      toast.success(response.data.message);
+      setIsOpen(false);
+      onCopyComplete();
+    } catch (error) {
+      console.error('Failed to copy week:', error);
+      toast.error('Failed to copy meal plans');
+    } finally {
+      setCopying(false);
+    }
+  };
+
+  const handleCopyMonth = async () => {
+    if (!sourceMonth) {
+      toast.error('Please select a source month');
+      return;
+    }
+
+    const currentMonth = currentWeekStart.substring(0, 7); // Get YYYY-MM from current week
+
+    try {
+      setCopying(true);
+      const response = await axios.post(`${API}/meal-plans/copy-month`, {
+        source_month: sourceMonth,
+        target_month: currentMonth,
+        overwrite_existing: overwriteExisting
+      });
+      
+      toast.success(response.data.message);
+      setIsOpen(false);
+      onCopyComplete();
+    } catch (error) {
+      console.error('Failed to copy month:', error);
+      toast.error('Failed to copy meal plans');
+    } finally {
+      setCopying(false);
+    }
+  };
+
+  const formatWeekOption = (weekStart) => {
+    const date = new Date(weekStart);
+    const endDate = new Date(date);
+    endDate.setDate(date.getDate() + 6);
+    
+    return `${date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    })} - ${endDate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    })}`;
+  };
+
+  const formatMonthOption = (monthStr) => {
+    const [year, month] = monthStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" data-testid="copy-meal-plan-button">
+          <Copy className="w-4 h-4 mr-2" />
+          Copy Plans
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Copy Meal Plans</DialogTitle>
+        </DialogHeader>
+        
+        <div className="copy-meal-plan-form">
+          <div className="copy-mode-selector">
+            <Label>Copy From</Label>
+            <div className="mode-buttons">
+              <Button
+                variant={copyMode === 'week' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCopyMode('week')}
+                data-testid="copy-mode-week"
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Previous Week
+              </Button>
+              <Button
+                variant={copyMode === 'month' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCopyMode('month')}
+                data-testid="copy-mode-month"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Previous Month
+              </Button>
+            </div>
+          </div>
+
+          {copyMode === 'week' ? (
+            <div className="form-group">
+              <Label>Select Source Week</Label>
+              <Select value={sourceWeek} onValueChange={setSourceWeek}>
+                <SelectTrigger data-testid="source-week-select">
+                  <SelectValue placeholder="Choose week to copy from..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableWeeks
+                    .filter(week => week !== currentWeekStart)
+                    .map(week => (
+                      <SelectItem key={week} value={week}>
+                        {formatWeekOption(week)}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="form-group">
+              <Label>Select Source Month</Label>
+              <Select value={sourceMonth} onValueChange={setSourceMonth}>
+                <SelectTrigger data-testid="source-month-select">
+                  <SelectValue placeholder="Choose month to copy from..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableMonths
+                    .filter(month => month !== currentWeekStart.substring(0, 7))
+                    .map(month => (
+                      <SelectItem key={month} value={month}>
+                        {formatMonthOption(month)}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div className="form-group">
+            <div className="checkbox-group">
+              <Checkbox
+                id="overwrite-existing"
+                checked={overwriteExisting}
+                onCheckedChange={setOverwriteExisting}
+                data-testid="overwrite-checkbox"
+              />
+              <Label htmlFor="overwrite-existing">
+                Overwrite existing meal plans
+              </Label>
+            </div>
+            <p className="checkbox-help">
+              If unchecked, will only copy to empty days
+            </p>
+          </div>
+
+          <div className="form-actions">
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={copying}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={copyMode === 'week' ? handleCopyWeek : handleCopyMonth}
+              disabled={copying || (!sourceWeek && !sourceMonth)}
+              data-testid="copy-confirm-button"
+            >
+              {copying ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Copying...
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy {copyMode === 'week' ? 'Week' : 'Month'}
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 function GroceryListPage({ weekDates, onBack }) {
   const [groceryLists, setGroceryLists] = useState([]);
   const [currentList, setCurrentList] = useState(null);
