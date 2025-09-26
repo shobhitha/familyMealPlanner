@@ -283,7 +283,7 @@ function GroceryListPage({ weekDates, onBack }) {
     return (
       <div className="grocery-loading">
         <ShoppingCart className="w-8 h-8 animate-bounce" />
-        <p>Loading your grocery lists...</p>
+        <p>Loading your Happy Gut grocery lists...</p>
       </div>
     );
   }
