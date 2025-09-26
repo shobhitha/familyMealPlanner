@@ -387,18 +387,24 @@ function MealForm({ meal, onSave, onCancel, familyMembers }) {
   return (
     <form onSubmit={handleSubmit} className="meal-form">
       <div className="form-group">
-        <Label htmlFor="meal-name">Meal Name</Label>
+        <Label htmlFor="meal-name">
+          Meal Name <span className="required-asterisk">*</span>
+        </Label>
         <Input
           id="meal-name"
           value={formData.name}
           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
           placeholder="Enter meal name"
           data-testid="meal-name-input"
+          required
+          className={!formData.name.trim() ? 'error-border' : ''}
         />
       </div>
       
       <div className="form-group">
-        <Label htmlFor="ingredients">Ingredients (one per line)</Label>
+        <Label htmlFor="ingredients">
+          Ingredients (one per line) <span className="required-asterisk">*</span>
+        </Label>
         <Textarea
           id="ingredients"
           value={formData.ingredients}
@@ -406,6 +412,8 @@ function MealForm({ meal, onSave, onCancel, familyMembers }) {
           placeholder="Chicken breast&#10;Olive oil&#10;Salt and pepper"
           rows={4}
           data-testid="ingredients-input"
+          required
+          className={!formData.ingredients.trim() ? 'error-border' : ''}
         />
       </div>
 
