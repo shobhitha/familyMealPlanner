@@ -162,7 +162,7 @@ A comprehensive meal planning application that helps families organize their wee
 ### AI Recipe Suggestions
 
 1. **Click "AI Recipe Ideas" button** in the top navigation (purple button with sparkles)
-2. **Describe what you want**: Enter a natural language prompt like:
+2. **Describe what you want** ⚠️ **(Required)**: Enter a natural language prompt like:
    - "Healthy chicken dinner for the family"
    - "Quick vegetarian pasta recipe"
    - "Birthday cake that kids will love"
@@ -173,6 +173,11 @@ A comprehensive meal planning application that helps families organize their wee
 4. **Generate Recipe**: Click "Generate Recipe" and wait for AI to create your custom recipe
 5. **Review & Accept**: AI will show complete recipe with ingredients, instructions, and family preference suggestions
 6. **Add to Meals**: Click "Add to My Meals" to save the AI-generated recipe
+
+**AI Validation:**
+- Recipe prompt is required and cannot be empty
+- AI-generated recipes are automatically validated to ensure they have valid names and ingredients
+- All AI recipes meet the same validation requirements as manually created meals
 
 ### Planning Your Week
 
