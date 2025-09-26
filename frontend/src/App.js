@@ -147,7 +147,461 @@ function DroppableMealSlot({ date, slot, meal, onMealDrop, onRemoveMeal }) {
   );
 }
 
-// Week Navigation and Copy Components
+// Calendar Components
+function YearCalendar({ selectedDate, onDateSelect, mealPlans, currentYear, onYearChange }) {
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  const getDaysInMonth = (year, month) => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (year, month) => {
+    return new Date(year, month, 1).getDay();
+  };
+
+  const formatDateKey = (year, month, day) => {
+    const date = new Date(year, month, day);
+    return date.toISOString().split('T')[0];
+  };
+
+  const hasMealPlan = (dateKey) => {
+    const plan = mealPlans[dateKey];
+    return plan && (plan.breakfast || plan.morning_snack || plan.lunch || plan.dinner || plan.evening_snack);
+  };
+
+  const getMealCount = (dateKey) => {
+    const plan = mealPlans[dateKey];
+    if (!plan) return 0;
+    let count = 0;
+    if (plan.breakfast) count++;
+    if (plan.morning_snack) count++;
+    if (plan.lunch) count++;
+    if (plan.dinner) count++;
+    if (plan.evening_snack) count++;
+    return count;
+  };
+
+  const renderCalendarMonth = (monthIndex) => {
+    const daysInMonth = getDaysInMonth(currentYear, monthIndex);
+    const firstDay = getFirstDayOfMonth(currentYear, monthIndex);
+    const days = [];
+
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = formatDateKey(currentYear, monthIndex, day);
+      const isSelected = dateKey === selectedDate;
+      const hasPlans = hasMealPlan(dateKey);
+      const mealCount = getMealCount(dateKey);
+      const isToday = dateKey === new Date().toISOString().split('T')[0];
+
+      days.push(
+        <div
+          key={day}
+          className={`calendar-day ${isSelected ? 'selected' : ''} ${hasPlans ? 'has-meals' : ''} ${isToday ? 'today' : ''}`}
+          onClick={() => onDateSelect(dateKey)}
+          data-testid={`calendar-day-${dateKey}`}
+        >
+          <span className="day-number">{day}</span>
+          {hasPlans && (
+            <div className="meal-indicators">
+              <Badge variant="secondary" className="meal-count">
+                {mealCount}
+              </Badge>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div key={monthIndex} className="calendar-month">
+        <h3 className="month-title">{months[monthIndex]}</h3>
+        <div className="calendar-grid">
+          <div className="calendar-header">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+              <div key={day} className="calendar-day-header">{day}</div>
+            ))}
+          </div>
+          <div className="calendar-days">
+            {days}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="year-calendar">
+      <div className="calendar-nav">
+        <Button
+          variant="outline"
+          onClick={() => onYearChange(currentYear - 1)}
+          data-testid="prev-year"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {currentYear - 1}
+        </Button>
+        <h2 className="calendar-year">{currentYear}</h2>
+        <Button
+          variant="outline"
+          onClick={() => onYearChange(currentYear + 1)}
+          data-testid="next-year"
+        >
+          {currentYear + 1}
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      </div>
+      <div className="calendar-months">
+        {months.map((_, index) => renderCalendarMonth(index))}
+      </div>
+    </div>
+  );
+}
+
+function DayDetailModal({ selectedDate, mealPlan, meals, onClose, onMealAssign, onMealRemove, familyMembers }) {
+  if (!selectedDate) return null;
+
+  const formatDateDisplay = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getMealById = (mealId) => {
+    return meals.find(meal => meal.id === mealId);
+  };
+
+  const MEAL_SLOTS = [
+    { key: 'breakfast', label: 'Breakfast', icon: '🌅' },
+    { key: 'morning_snack', label: 'Morning Snack', icon: '☕' },
+    { key: 'lunch', label: 'Lunch', icon: '🥗' },
+    { key: 'dinner', label: 'Dinner', icon: '🍽️' },
+    { key: 'evening_snack', label: 'Evening Snack', icon: '🍪' }
+  ];
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            {formatDateDisplay(selectedDate)}
+          </DialogTitle>
+        </DialogHeader>
+        
+        <div className="day-detail-content">
+          {MEAL_SLOTS.map(slot => {
+            const assignedMealId = mealPlan?.[slot.key];
+            const assignedMeal = assignedMealId ? getMealById(assignedMealId) : null;
+
+            return (
+              <div key={slot.key} className="meal-slot-detail">
+                <div className="slot-header">
+                  <span className="slot-icon">{slot.icon}</span>
+                  <h4>{slot.label}</h4>
+                </div>
+                
+                {assignedMeal ? (
+                  <div className="assigned-meal-detail">
+                    <div className="meal-info">
+                      <h5>{assignedMeal.name}</h5>
+                      <div className="meal-ingredients">
+                        {assignedMeal.ingredients.slice(0, 3).join(', ')}
+                        {assignedMeal.ingredients.length > 3 && '...'}
+                      </div>
+                      {assignedMeal.family_preferences.length > 0 && (
+                        <div className="family-preferences">
+                          {assignedMeal.family_preferences.map(member => (
+                            <span key={member} className="family-emoji">
+                              {getFamilyEmoji(member)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onMealRemove(selectedDate, slot.key)}
+                      data-testid={`remove-${slot.key}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="empty-meal-slot">
+                    <Select onValueChange={(mealId) => onMealAssign(selectedDate, slot.key, mealId)}>
+                      <SelectTrigger data-testid={`assign-${slot.key}`}>
+                        <SelectValue placeholder="Select a meal..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {meals.map(meal => (
+                          <SelectItem key={meal.id} value={meal.id}>
+                            <div className="meal-option">
+                              <span>{meal.name}</span>
+                              {meal.family_preferences.length > 0 && (
+                                <div className="meal-option-emojis">
+                                  {meal.family_preferences.slice(0, 3).map(member => (
+                                    <span key={member}>{getFamilyEmoji(member)}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DateRangeFilter({ onFilterApply, onViewChange, currentView }) {
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+
+  const handleApplyFilter = () => {
+    if (!fromDate || !toDate) {
+      toast.error('Please select both from and to dates');
+      return;
+    }
+    if (new Date(fromDate) > new Date(toDate)) {
+      toast.error('From date must be before to date');
+      return;
+    }
+    onFilterApply(fromDate, toDate);
+  };
+
+  const handleClearFilter = () => {
+    setFromDate('');
+    setToDate('');
+    onFilterApply(null, null);
+  };
+
+  return (
+    <div className="date-range-filter">
+      <div className="view-toggle">
+        <Button
+          variant={currentView === 'calendar' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => onViewChange('calendar')}
+          data-testid="calendar-view"
+        >
+          <CalendarDays className="w-4 h-4 mr-2" />
+          Calendar
+        </Button>
+        <Button
+          variant={currentView === 'table' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => onViewChange('table')}
+          data-testid="table-view"
+        >
+          <Table className="w-4 h-4 mr-2" />
+          Table
+        </Button>
+      </div>
+
+      {currentView === 'table' && (
+        <div className="filter-controls">
+          <div className="date-inputs">
+            <div className="date-input-group">
+              <Label>From Date</Label>
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                data-testid="from-date"
+              />
+            </div>
+            <div className="date-input-group">
+              <Label>To Date</Label>
+              <Input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                data-testid="to-date"
+              />
+            </div>
+          </div>
+          <div className="filter-actions">
+            <Button
+              onClick={handleApplyFilter}
+              disabled={!fromDate || !toDate}
+              data-testid="apply-filter"
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Apply Filter
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleClearFilter}
+              data-testid="clear-filter"
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TableMealPlanView({ mealPlans, meals, fromDate, toDate }) {
+  const getMealById = (mealId) => {
+    return meals.find(meal => meal.id === mealId);
+  };
+
+  const generateDateRange = (start, end) => {
+    const dates = [];
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      dates.push(new Date(d).toISOString().split('T')[0]);
+    }
+    return dates;
+  };
+
+  const groupDatesByWeek = (dates) => {
+    const weeks = [];
+    let currentWeek = [];
+    
+    dates.forEach(date => {
+      const dayOfWeek = new Date(date).getDay();
+      
+      if (dayOfWeek === 0 && currentWeek.length > 0) { // Sunday, start new week
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
+      
+      currentWeek.push(date);
+    });
+    
+    if (currentWeek.length > 0) {
+      weeks.push(currentWeek);
+    }
+    
+    return weeks;
+  };
+
+  if (!fromDate || !toDate) {
+    return (
+      <div className="table-empty-state">
+        <Table className="w-16 h-16 text-orange-300" />
+        <h3>Select Date Range</h3>
+        <p>Choose from and to dates to view meal plans in table format</p>
+      </div>
+    );
+  }
+
+  const dateRange = generateDateRange(fromDate, toDate);
+  const weeks = groupDatesByWeek(dateRange);
+
+  const MEAL_SLOTS = [
+    { key: 'breakfast', label: 'Breakfast', icon: '🌅' },
+    { key: 'morning_snack', label: 'Morning Snack', icon: '☕' },
+    { key: 'lunch', label: 'Lunch', icon: '🥗' },
+    { key: 'dinner', label: 'Dinner', icon: '🍽️' },
+    { key: 'evening_snack', label: 'Evening Snack', icon: '🍪' }
+  ];
+
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  return (
+    <div className="table-meal-plan-view">
+      <div className="table-header">
+        <h3>
+          Meal Plans: {new Date(fromDate).toLocaleDateString()} - {new Date(toDate).toLocaleDateString()}
+        </h3>
+        <p>{dateRange.length} days • {weeks.length} weeks</p>
+      </div>
+
+      {weeks.map((week, weekIndex) => (
+        <div key={weekIndex} className="week-table">
+          <h4 className="week-title">
+            Week {weekIndex + 1}: {new Date(week[0]).toLocaleDateString()} - {new Date(week[week.length - 1]).toLocaleDateString()}
+          </h4>
+          
+          <div className="meal-plan-table">
+            <table>
+              <thead>
+                <tr>
+                  <th className="meal-slot-header">Meal</th>
+                  {week.map(date => {
+                    const dayName = DAYS[new Date(date).getDay()];
+                    const dayDate = new Date(date).getDate();
+                    return (
+                      <th key={date} className="day-header">
+                        <div>{dayName}</div>
+                        <div className="day-date">{dayDate}</div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {MEAL_SLOTS.map(slot => (
+                  <tr key={slot.key}>
+                    <td className="meal-slot-label">
+                      <span className="slot-icon">{slot.icon}</span>
+                      {slot.label}
+                    </td>
+                    {week.map(date => {
+                      const mealPlan = mealPlans[date];
+                      const mealId = mealPlan?.[slot.key];
+                      const meal = mealId ? getMealById(mealId) : null;
+                      
+                      return (
+                        <td key={`${date}-${slot.key}`} className="meal-cell">
+                          {meal ? (
+                            <div className="table-meal">
+                              <div className="meal-name">{meal.name}</div>
+                              {meal.family_preferences.length > 0 && (
+                                <div className="table-family-prefs">
+                                  {meal.family_preferences.map(member => (
+                                    <span key={member} className="table-family-emoji">
+                                      {getFamilyEmoji(member)}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="empty-meal-cell">-</div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 function WeekNavigator({ currentWeekStart, onWeekChange, availableWeeks }) {
   const formatWeekDisplay = (weekStartDate) => {
     const date = new Date(weekStartDate);
