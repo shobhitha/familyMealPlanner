@@ -656,10 +656,11 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 4. **Start** development servers (backend on :8001, frontend on :3000)
 5. **Create** your first meal with AI recipe suggestions
 6. **Plan** your week using drag-and-drop functionality
-7. **Enjoy** organized family meal planning!
+7. **Generate** grocery lists from your meal plans
+8. **Enjoy** organized family meal planning with Happy Gut!
 
 ---
 
 **Built with ❤️ for families who love to plan their meals together!**
 
-*Last updated: September 2024*
+*Last updated: September 2025*
