@@ -2031,14 +2031,14 @@ function App() {
       <div className="App">
         <Toaster richColors position="top-right" />
         <GroceryListPage 
-          weekDates={weekDates} 
-          onBack={() => setCurrentView('planner')} 
+          weekDates={[]} // Not used in new calendar view
+          onBack={() => setCurrentView('calendar')} 
         />
       </div>
     );
   }
 
-  // Show main meal planner
+  // Show main meal planner with calendar/table view
   return (
     <div className="App">
       <Toaster richColors position="top-right" />
@@ -2116,8 +2116,8 @@ function App() {
       <div className="app-content">
         <DndContext 
           collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
+          onDragStart={(event) => setActiveId(event.active.id)}
+          onDragEnd={() => setActiveId(null)}
         >
           {/* Meals Sidebar */}
           <div className="meals-sidebar">
@@ -2151,65 +2151,55 @@ function App() {
             </div>
           </div>
 
-          {/* Weekly Planner */}
-          <div className="weekly-planner">
-            <div className="weekly-planner-header">
-              <h2>Weekly Meal Plan</h2>
-              <div className="planner-controls">
-                <WeekNavigator
-                  currentWeekStart={currentWeekStart}
-                  onWeekChange={handleWeekChange}
-                  availableWeeks={availableWeeks}
-                />
-                <CopyMealPlanDialog
-                  currentWeekStart={currentWeekStart}
-                  availableWeeks={availableWeeks}
-                  onCopyComplete={() => {
-                    loadData();
-                    loadAvailableWeeks();
-                  }}
-                />
-              </div>
-            </div>
-            <div className="week-grid" data-testid="week-grid">
-              {DAYS.map((day, dayIndex) => (
-                <div key={day.key} className="day-column">
-                  <div className="day-header">
-                    <h3>{day.label}</h3>
-                    <span className="day-date">
-                      {new Date(weekDates[dayIndex]).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </span>
-                  </div>
-                  <div className="meal-slots">
-                    {MEAL_SLOTS.map(slot => (
-                      <DroppableMealSlot
-                        key={`${weekDates[dayIndex]}-${slot.key}`}
-                        date={weekDates[dayIndex]}
-                        slot={slot}
-                        meal={getAssignedMeal(weekDates[dayIndex], slot.key)}
-                        onMealDrop={handleMealDrop}
-                        onRemoveMeal={handleRemoveMeal}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Main Calendar/Table View */}
+          <div className="main-planner-view">
+            <DateRangeFilter
+              onFilterApply={handleDateRangeFilter}
+              onViewChange={setCurrentView}
+              currentView={currentView}
+            />
+            
+            {currentView === 'calendar' ? (
+              <YearCalendar
+                selectedDate={selectedDate}
+                onDateSelect={setSelectedDate}
+                mealPlans={mealPlans}
+                currentYear={currentYear}
+                onYearChange={handleYearChange}
+              />
+            ) : (
+              <TableMealPlanView
+                mealPlans={mealPlans}
+                meals={meals}
+                fromDate={fromDate}
+                toDate={toDate}
+              />
+            )}
           </div>
 
           {/* Drag Overlay */}
           <DragOverlay>
             {activeId ? (
               <DraggableMealCard 
-                meal={getMealById(activeId)} 
+                meal={meals.find(m => m.id === activeId)} 
                 isDragging={true}
               />
             ) : null}
           </DragOverlay>
         </DndContext>
+
+        {/* Day Detail Modal */}
+        {selectedDate && (
+          <DayDetailModal
+            selectedDate={selectedDate}
+            mealPlan={mealPlans[selectedDate]}
+            meals={meals}
+            onClose={() => setSelectedDate(null)}
+            onMealAssign={handleMealDrop}
+            onMealRemove={handleMealRemove}
+            familyMembers={familyMembers}
+          />
+        )}
 
         {/* Edit Meal Dialog */}
         <Dialog open={editingMeal !== null} onOpenChange={(open) => !open && setEditingMeal(null)}>
