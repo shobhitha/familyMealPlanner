@@ -176,12 +176,10 @@ function MealForm({ meal, onSave, onCancel, familyMembers }) {
   };
 
   const toggleFamilyPreference = (member) => {
-    console.log('Toggling family preference for:', member);
     setFormData(prev => {
       const newPreferences = prev.family_preferences.includes(member)
         ? prev.family_preferences.filter(m => m !== member)
         : [...prev.family_preferences, member];
-      console.log('Updated family preferences:', newPreferences);
       return {
         ...prev,
         family_preferences: newPreferences
