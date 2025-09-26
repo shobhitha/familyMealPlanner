@@ -1007,6 +1007,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
+  const [currentView, setCurrentView] = useState('planner'); // 'planner' or 'grocery'
 
   // Load initial data
   useEffect(() => {
