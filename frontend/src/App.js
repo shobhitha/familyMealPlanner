@@ -146,7 +146,161 @@ function DroppableMealSlot({ date, slot, meal, onMealDrop, onRemoveMeal }) {
   );
 }
 
-// AI Recipe Suggestion Component
+// Ingredient Search Component
+function IngredientSearchInput({ ingredients, onIngredientsChange, required = false }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Debounced search function
+  useEffect(() => {
+    const searchIngredients = async () => {
+      if (searchTerm.trim().length < 2) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      try {
+        setIsSearching(true);
+        const response = await axios.post(`${API}/ingredients/search`, {
+          query: searchTerm,
+          limit: 10
+        });
+        setSuggestions(response.data);
+        setShowSuggestions(true);
+      } catch (error) {
+        console.error('Failed to search ingredients:', error);
+        setSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(searchIngredients, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm]);
+
+  const handleAddIngredient = async (ingredientName) => {
+    const trimmedName = ingredientName.trim();
+    if (!trimmedName || ingredients.includes(trimmedName)) return;
+
+    try {
+      // Add to backend database and increment usage count
+      await axios.post(`${API}/ingredients`, {
+        name: trimmedName,
+        category: null
+      });
+
+      // Add to local ingredient list
+      onIngredientsChange([...ingredients, trimmedName]);
+      setSearchTerm('');
+      setSuggestions([]);
+      setShowSuggestions(false);
+    } catch (error) {
+      console.error('Failed to add ingredient:', error);
+      // Still add locally even if backend fails
+      onIngredientsChange([...ingredients, trimmedName]);
+      setSearchTerm('');
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleRemoveIngredient = (index) => {
+    const newIngredients = ingredients.filter((_, i) => i !== index);
+    onIngredientsChange(newIngredients);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (suggestions.length > 0) {
+        handleAddIngredient(suggestions[0].name);
+      } else if (searchTerm.trim()) {
+        handleAddIngredient(searchTerm);
+      }
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setSearchTerm('');
+    }
+  };
+
+  return (
+    <div className="ingredient-search-container">
+      <div className="ingredient-search-input-wrapper">
+        <div className="search-input-container">
+          <Search className="search-icon" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder="Type to search ingredients..."
+            className="ingredient-search-input"
+            data-testid="ingredient-search-input"
+          />
+          {isSearching && (
+            <Loader2 className="search-loading-icon animate-spin" />
+          )}
+        </div>
+
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="ingredient-suggestions" data-testid="ingredient-suggestions">
+            {suggestions.map((ingredient) => (
+              <button
+                key={ingredient.id}
+                type="button"
+                className="ingredient-suggestion-item"
+                onClick={() => handleAddIngredient(ingredient.name)}
+                data-testid={`suggestion-${ingredient.name}`}
+              >
+                <span className="suggestion-name">{ingredient.name}</span>
+                {ingredient.category && (
+                  <Badge variant="outline" className="suggestion-category">
+                    {ingredient.category}
+                  </Badge>
+                )}
+                {ingredient.is_common && (
+                  <Badge variant="secondary" className="suggestion-common">
+                    Common
+                  </Badge>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {ingredients.length > 0 && (
+        <div className="selected-ingredients">
+          <Label>Selected Ingredients ({ingredients.length})</Label>
+          <div className="ingredient-tags" data-testid="selected-ingredients">
+            {ingredients.map((ingredient, index) => (
+              <div key={index} className="ingredient-tag">
+                <span>{ingredient}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveIngredient(index)}
+                  className="remove-ingredient-btn"
+                  data-testid={`remove-ingredient-${index}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {required && ingredients.length === 0 && (
+        <div className="error-message">
+          At least one ingredient is required
+        </div>
+      )}
+    </div>
+  );
+}
 function AIRecipeSuggestionForm({ onSuggest, onCancel, isLoading }) {
   const [formData, setFormData] = useState({
     prompt: '',
