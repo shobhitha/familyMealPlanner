@@ -341,6 +341,9 @@ function AIRecipePreview({ suggestion, onAccept, onRegenerate, onCancel, familyM
     </div>
   );
 }
+
+// Meal Form Component  
+function MealForm({ meal, onSave, onCancel, familyMembers }) {
   const [formData, setFormData] = useState({
     name: meal?.name || '',
     ingredients: meal?.ingredients?.join('\n') || '',
