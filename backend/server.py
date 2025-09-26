@@ -74,6 +74,21 @@ class MealPlanUpdate(BaseModel):
     meal_slot: str  # breakfast, morning_snack, lunch, dinner, evening_snack
     meal_id: Optional[str] = None
 
+class RecipeSuggestionRequest(BaseModel):
+    prompt: str
+    dietary_preferences: Optional[List[str]] = Field(default_factory=list)  # e.g., ["vegetarian", "low-carb"]
+    cuisine_type: Optional[str] = None  # e.g., "Italian", "Asian", "Mexican"
+    difficulty_level: Optional[str] = None  # e.g., "easy", "medium", "hard"
+
+class AIRecipeSuggestion(BaseModel):
+    name: str
+    ingredients: List[str]
+    recipe: str
+    suggested_family_preferences: List[str] = Field(default_factory=list)
+    cuisine_type: Optional[str] = None
+    difficulty_level: Optional[str] = None
+    cooking_time: Optional[str] = None
+
 # Helper functions
 def prepare_for_mongo(data):
     """Convert datetime objects to ISO strings for MongoDB storage"""
