@@ -412,9 +412,19 @@ body {
 }
 
 .family-button.selected {
-  border-color: #ff7518;
-  background: rgba(255, 117, 24, 0.15);
-  box-shadow: 0 4px 12px rgba(255, 117, 24, 0.2);
+  border-color: #ff7518 !important;
+  background: rgba(255, 117, 24, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(255, 117, 24, 0.3) !important;
+  transform: scale(1.02);
+}
+
+.family-button.selected .family-emoji {
+  filter: brightness(1.1);
+}
+
+.family-button.selected .family-label {
+  font-weight: 600;
+  color: #d63384;
 }
 
 .family-button .family-emoji {
