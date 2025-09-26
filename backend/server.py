@@ -328,26 +328,35 @@ Guidelines:
 async def create_meal_from_ai_suggestion(suggestion: AIRecipeSuggestion):
     """Create a meal from AI recipe suggestion"""
     try:
-        # Validate required fields
+        # Validate required fields with detailed error messages
         if not suggestion.name or not suggestion.name.strip():
-            raise HTTPException(status_code=422, detail="Meal name is required")
+            raise HTTPException(status_code=422, detail="Meal name is required and cannot be empty")
         if not suggestion.ingredients or len(suggestion.ingredients) == 0:
             raise HTTPException(status_code=422, detail="At least one ingredient is required")
-        if not suggestion.recipe or not suggestion.recipe.strip():
-            raise HTTPException(status_code=422, detail="Recipe is required")
+            
+        # Check if ingredients list contains only empty strings
+        valid_ingredients = [ing.strip() for ing in suggestion.ingredients if ing.strip()]
+        if len(valid_ingredients) == 0:
+            raise HTTPException(status_code=422, detail="At least one valid ingredient is required")
+            
+        # Recipe is optional but if provided should not be empty
+        if suggestion.recipe and not suggestion.recipe.strip():
+            raise HTTPException(status_code=422, detail="Recipe cannot be empty if provided")
         
-        # Create meal from AI suggestion
+        # Create meal from AI suggestion with validated ingredients
         meal_obj = Meal(
-            name=suggestion.name,
-            ingredients=suggestion.ingredients,
-            recipe=suggestion.recipe,
-            family_preferences=suggestion.suggested_family_preferences
+            name=suggestion.name.strip(),
+            ingredients=valid_ingredients,
+            recipe=suggestion.recipe.strip() if suggestion.recipe else "",
+            family_preferences=suggestion.suggested_family_preferences or []
         )
         
         meal_data = prepare_for_mongo(meal_obj.dict())
         await db.meals.insert_one(meal_data)
         return meal_obj
         
+    except HTTPException:
+        raise  # Re-raise validation errors
     except Exception as e:
         logger.error(f"Failed to create meal from suggestion: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create meal from suggestion")
