@@ -1767,14 +1767,15 @@ function App() {
   const [isCreateMealOpen, setIsCreateMealOpen] = useState(false);
   const [isAISuggestionOpen, setIsAISuggestionOpen] = useState(false);
   const [editingMeal, setEditingMeal] = useState(null);
-  const [weekDates, setWeekDates] = useState(getCurrentWeekDates());
-  const [currentWeekStart, setCurrentWeekStart] = useState(getCurrentWeekDates()[0]);
-  const [availableWeeks, setAvailableWeeks] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentView, setCurrentView] = useState('calendar'); // 'calendar' or 'table' or 'grocery'
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState(null);
-  const [currentView, setCurrentView] = useState('planner'); // 'planner' or 'grocery'
 
   // Load initial data
   useEffect(() => {
