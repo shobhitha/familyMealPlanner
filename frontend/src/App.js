@@ -357,14 +357,23 @@ function MealForm({ meal, onSave, onCancel, familyMembers }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    const errors = [];
     if (!formData.name.trim()) {
-      toast.error("Please enter a meal name");
-      return;
+      errors.push("Meal name is required");
     }
     if (!formData.ingredients.trim()) {
-      toast.error("Please enter ingredients");
+      errors.push("Ingredients are required");
+    }
+    
+    // Show error for first validation failure
+    if (errors.length > 0) {
+      toast.error(errors[0]);
       return;
     }
+    
+    // Optional validation for recipe
     if (!formData.recipe.trim()) {
       toast.error("Please enter a recipe");
       return;
