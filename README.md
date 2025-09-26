@@ -149,15 +149,24 @@ A comprehensive meal planning application that helps families organize their wee
 1. **Click "Add Meal" button** in the top navigation
 2. **Fill in meal details** (fields marked with * are mandatory):
    - **Meal Name** ⚠️ **(Required)**: Enter a descriptive name for your recipe
-   - **Ingredients** ⚠️ **(Required)**: Add one ingredient per line (minimum one ingredient required)
+   - **Ingredients** ⚠️ **(Required)**: Use the smart search system to add ingredients
+     - **Type to Search**: Start typing ingredient names to see suggestions
+     - **Autocomplete**: Select from database suggestions with category badges
+     - **Smart Categories**: Ingredients are categorized (protein, vegetable, spice, dairy, etc.)
+     - **Usage Tracking**: Frequently used ingredients appear first in suggestions
+     - **Custom Ingredients**: Add new ingredients that aren't in the database
+     - **Easy Management**: Click tags to remove ingredients
    - **Recipe**: Provide detailed cooking instructions (optional)
 3. **Select Family Preferences**: Click on family member emojis to mark favorites (optional)
 4. **Save the meal**: Click "Create Meal" button
 
-**Validation Rules:**
-- Meal name cannot be empty or contain only spaces
-- At least one valid ingredient is required (empty ingredient lines are automatically filtered out)
-- Recipe field is optional but if provided cannot be empty
+**Ingredient Search Features:**
+- **Real-time Search**: Suggestions appear as you type (minimum 2 characters)
+- **Category Badges**: See ingredient categories (protein, vegetable, spice, dairy, fruit, etc.)
+- **Common Ingredients**: Pre-loaded with 70+ common cooking ingredients
+- **Personal Database**: Your custom ingredients are saved for future use
+- **Usage Analytics**: Most-used ingredients prioritized in search results
+- **Flexible Input**: Can add ingredients not in the database
 
 ### AI Recipe Suggestions
 
