@@ -219,6 +219,129 @@ body {
   text-align: center;
 }
 
+.weekly-planner-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.planner-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Week Navigator Styles */
+.week-navigator {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #ffd1a6;
+  box-shadow: 0 2px 8px rgba(255, 183, 71, 0.1);
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  border-color: #ffd1a6;
+  color: #8b4513;
+  transition: all 0.2s ease;
+}
+
+.nav-button:hover {
+  border-color: #ffb347;
+  background: rgba(255, 183, 71, 0.1);
+  transform: translateY(-1px);
+}
+
+.week-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.week-date-range {
+  font-weight: 600;
+  color: #8b4513;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.current-week-badge {
+  background: rgba(34, 197, 94, 0.1);
+  color: #059669;
+  border: 1px solid #10b981;
+  font-size: 0.75rem;
+}
+
+.has-meals-badge {
+  background: rgba(255, 183, 71, 0.2);
+  color: #8b4513;
+  border: 1px solid #ffb347;
+  font-size: 0.75rem;
+}
+
+/* Copy Meal Plan Dialog Styles */
+.copy-meal-plan-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+.copy-mode-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mode-buttons button {
+  flex: 1;
+  justify-content: flex-start;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox-help {
+  font-size: 0.8rem;
+  color: #a0522d;
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.form-actions button {
+  min-width: 100px;
+}
+
 .week-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
