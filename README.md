@@ -221,6 +221,12 @@ A comprehensive meal planning application that helps families organize their wee
 - `POST /api/suggest-recipe` - Generate AI recipe suggestions based on user prompt
 - `POST /api/create-meal-from-suggestion` - Create meal from AI recipe suggestion
 
+### Ingredients
+- `POST /api/ingredients/search` - Search for ingredients with autocomplete
+- `POST /api/ingredients` - Create new ingredient or increment usage count
+- `GET /api/ingredients/popular` - Get most frequently used ingredients
+- `POST /api/ingredients/seed` - Seed database with common ingredients (admin)
+
 ## 🗄️ Data Models
 
 ### Meal Model
