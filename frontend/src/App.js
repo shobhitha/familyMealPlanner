@@ -146,8 +146,201 @@ function DroppableMealSlot({ date, slot, meal, onMealDrop, onRemoveMeal }) {
   );
 }
 
-// Meal Form Component
-function MealForm({ meal, onSave, onCancel, familyMembers }) {
+// AI Recipe Suggestion Component
+function AIRecipeSuggestionForm({ onSuggest, onCancel, isLoading }) {
+  const [formData, setFormData] = useState({
+    prompt: '',
+    dietary_preferences: [],
+    cuisine_type: '',
+    difficulty_level: ''
+  });
+
+  const dietaryOptions = [
+    'vegetarian', 'vegan', 'gluten-free', 'dairy-free', 'low-carb', 
+    'keto', 'paleo', 'low-sodium', 'high-protein', 'nut-free'
+  ];
+
+  const cuisineOptions = [
+    'Italian', 'Asian', 'Mexican', 'American', 'Mediterranean', 
+    'Indian', 'French', 'Chinese', 'Thai', 'Japanese'
+  ];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.prompt.trim()) {
+      toast.error("Please describe what kind of recipe you want");
+      return;
+    }
+    onSuggest(formData);
+  };
+
+  const toggleDietaryPreference = (preference) => {
+    setFormData(prev => ({
+      ...prev,
+      dietary_preferences: prev.dietary_preferences.includes(preference)
+        ? prev.dietary_preferences.filter(p => p !== preference)
+        : [...prev.dietary_preferences, preference]
+    }));
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="ai-suggestion-form">
+      <div className="form-group">
+        <Label htmlFor="recipe-prompt">What would you like to cook?</Label>
+        <Textarea
+          id="recipe-prompt"
+          value={formData.prompt}
+          onChange={(e) => setFormData(prev => ({ ...prev, prompt: e.target.value }))}
+          placeholder="E.g., healthy chicken dinner, quick vegetarian pasta, birthday cake for kids..."
+          rows={3}
+          data-testid="recipe-prompt-input"
+        />
+      </div>
+
+      <div className="form-group">
+        <Label>Dietary Preferences (optional)</Label>
+        <div className="dietary-preferences-grid">
+          {dietaryOptions.map(option => (
+            <button
+              key={option}
+              type="button"
+              className={`dietary-button ${formData.dietary_preferences.includes(option) ? 'selected' : ''}`}
+              onClick={() => toggleDietaryPreference(option)}
+              data-testid={`dietary-${option}-button`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group">
+          <Label htmlFor="cuisine-type">Cuisine Type (optional)</Label>
+          <Select 
+            value={formData.cuisine_type} 
+            onValueChange={(value) => setFormData(prev => ({ ...prev, cuisine_type: value }))}
+          >
+            <SelectTrigger data-testid="cuisine-select">
+              <SelectValue placeholder="Select cuisine" />
+            </SelectTrigger>
+            <SelectContent>
+              {cuisineOptions.map(cuisine => (
+                <SelectItem key={cuisine} value={cuisine}>{cuisine}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="form-group">
+          <Label htmlFor="difficulty-level">Difficulty (optional)</Label>
+          <Select 
+            value={formData.difficulty_level} 
+            onValueChange={(value) => setFormData(prev => ({ ...prev, difficulty_level: value }))}
+          >
+            <SelectTrigger data-testid="difficulty-select">
+              <SelectValue placeholder="Select difficulty" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="easy">Easy</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="hard">Hard</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="form-actions">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={isLoading} data-testid="generate-recipe-button">
+          {isLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Generate Recipe
+            </>
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+// AI Recipe Preview Component
+function AIRecipePreview({ suggestion, onAccept, onRegenerate, onCancel, familyMembers }) {
+  return (
+    <div className="ai-recipe-preview">
+      <div className="recipe-header">
+        <h3 className="recipe-title">{suggestion.name}</h3>
+        {suggestion.cuisine_type && (
+          <Badge variant="secondary" className="cuisine-badge">
+            {suggestion.cuisine_type}
+          </Badge>
+        )}
+        {suggestion.difficulty_level && (
+          <Badge variant="outline" className="difficulty-badge">
+            {suggestion.difficulty_level}
+          </Badge>
+        )}
+        {suggestion.cooking_time && (
+          <Badge variant="outline" className="time-badge">
+            {suggestion.cooking_time}
+          </Badge>
+        )}
+      </div>
+
+      <div className="recipe-content">
+        <div className="ingredients-section">
+          <h4>Ingredients:</h4>
+          <ul className="ingredients-list">
+            {suggestion.ingredients.map((ingredient, index) => (
+              <li key={index}>{ingredient}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="recipe-section">
+          <h4>Instructions:</h4>
+          <p className="recipe-text">{suggestion.recipe}</p>
+        </div>
+
+        {suggestion.suggested_family_preferences.length > 0 && (
+          <div className="suggested-preferences">
+            <h4>Suggested Family Favorites:</h4>
+            <div className="family-emojis">
+              {suggestion.suggested_family_preferences.map(member => (
+                <span key={member} className="family-emoji-suggestion">
+                  {getFamilyEmoji(member)}
+                  <span className="emoji-label">{member}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="preview-actions">
+        <Button variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button variant="outline" onClick={onRegenerate}>
+          <Sparkles className="w-4 h-4 mr-2" />
+          Try Again
+        </Button>
+        <Button onClick={onAccept} data-testid="accept-ai-recipe-button">
+          <Plus className="w-4 h-4 mr-2" />
+          Add to My Meals
+        </Button>
+      </div>
+    </div>
+  );
+}
   const [formData, setFormData] = useState({
     name: meal?.name || '',
     ingredients: meal?.ingredients?.join('\n') || '',
