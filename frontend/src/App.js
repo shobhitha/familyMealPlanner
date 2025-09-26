@@ -1191,7 +1191,7 @@ function App() {
     return (
       <div className="app-loading">
         <ChefHat className="w-8 h-8 animate-spin" />
-        <p>Loading your meal planner...</p>
+        <p>Loading your Happy Gut meal planner...</p>
       </div>
     );
   }
