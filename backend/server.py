@@ -273,6 +273,10 @@ async def get_family_members():
 async def suggest_recipe_with_ai(request: RecipeSuggestionRequest):
     """Generate AI recipe suggestions based on user prompt"""
     try:
+        # Validate required prompt
+        if not request.prompt or not request.prompt.strip():
+            raise HTTPException(status_code=422, detail="Recipe prompt is required and cannot be empty")
+            
         # Get the API key from environment
         api_key = os.environ.get('EMERGENT_LLM_KEY')
         if not api_key:
@@ -301,11 +305,13 @@ Guidelines:
 3. Suggest family preferences based on typical appeal (kids usually like simpler foods, adults might enjoy more complex flavors)
 4. Include appropriate difficulty and time estimates
 5. Make ingredients specific and measurable
-6. Only respond with valid JSON, no additional text"""
+6. Only respond with valid JSON, no additional text
+7. ALWAYS include at least 3 ingredients and detailed cooking instructions
+8. Recipe name must be descriptive and not empty"""
         ).with_model("openai", "gpt-4o-mini")
         
         # Build the prompt based on request
-        prompt_parts = [f"Create a recipe for: {request.prompt}"]
+        prompt_parts = [f"Create a recipe for: {request.prompt.strip()}"]
         
         if request.dietary_preferences:
             prompt_parts.append(f"Dietary requirements: {', '.join(request.dietary_preferences)}")
@@ -327,6 +333,13 @@ Guidelines:
         # Parse the JSON response
         try:
             recipe_data = json.loads(response)
+            
+            # Validate AI response has required fields
+            if not recipe_data.get('name') or not recipe_data.get('name').strip():
+                raise HTTPException(status_code=500, detail="AI generated recipe without a valid name")
+            if not recipe_data.get('ingredients') or len(recipe_data.get('ingredients', [])) == 0:
+                raise HTTPException(status_code=500, detail="AI generated recipe without ingredients")
+            
             return AIRecipeSuggestion(**recipe_data)
         except json.JSONDecodeError as e:
             # If JSON parsing fails, try to extract JSON from response
@@ -334,10 +347,19 @@ Guidelines:
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
             if json_match:
                 recipe_data = json.loads(json_match.group())
+                
+                # Validate extracted response
+                if not recipe_data.get('name') or not recipe_data.get('name').strip():
+                    raise HTTPException(status_code=500, detail="AI generated recipe without a valid name")
+                if not recipe_data.get('ingredients') or len(recipe_data.get('ingredients', [])) == 0:
+                    raise HTTPException(status_code=500, detail="AI generated recipe without ingredients")
+                    
                 return AIRecipeSuggestion(**recipe_data)
             else:
                 raise HTTPException(status_code=500, detail="Failed to parse AI response")
                 
+    except HTTPException:
+        raise  # Re-raise validation errors
     except Exception as e:
         logger.error(f"AI recipe suggestion error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate recipe suggestion: {str(e)}")
