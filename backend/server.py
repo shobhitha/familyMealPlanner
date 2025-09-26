@@ -168,6 +168,20 @@ class WeeklyGroceryGenerate(BaseModel):
     merge_duplicates: bool = True
     organize_by_category: bool = True
 
+class MealPlanCopy(BaseModel):
+    source_week_start: str  # YYYY-MM-DD
+    target_week_start: str  # YYYY-MM-DD
+    overwrite_existing: bool = False
+
+class MonthlyMealPlanCopy(BaseModel):
+    source_month: str  # YYYY-MM
+    target_month: str  # YYYY-MM
+    overwrite_existing: bool = False
+
+class DateRangeQuery(BaseModel):
+    start_date: str  # YYYY-MM-DD
+    end_date: str    # YYYY-MM-DD
+
 # Helper functions
 def prepare_for_mongo(data):
     """Convert datetime objects to ISO strings for MongoDB storage"""
