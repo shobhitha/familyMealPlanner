@@ -788,6 +788,182 @@ button[data-testid*="ai-suggest"]:hover {
   border-top: 1px solid #f3f4f6;
 }
 
+/* Ingredient Search Component Styles */
+.ingredient-search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ingredient-search-input-wrapper {
+  position: relative;
+}
+
+.search-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  color: #8b4513;
+  z-index: 1;
+}
+
+.ingredient-search-input {
+  padding-left: 2.5rem !important;
+  padding-right: 2.5rem !important;
+}
+
+.search-loading-icon {
+  position: absolute;
+  right: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  color: #8b4513;
+}
+
+.ingredient-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ffd1a6;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(255, 183, 71, 0.2);
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+  margin-top: 0.25rem;
+}
+
+.ingredient-suggestion-item {
+  width: 100%;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid rgba(255, 209, 166, 0.3);
+}
+
+.ingredient-suggestion-item:hover {
+  background: rgba(255, 183, 71, 0.1);
+}
+
+.ingredient-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-name {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+  color: #8b4513;
+}
+
+.suggestion-category {
+  font-size: 0.7rem;
+  background: rgba(139, 92, 246, 0.1);
+  color: #6d28d9;
+  border-color: #8b5cf6;
+}
+
+.suggestion-common {
+  font-size: 0.7rem;
+  background: rgba(34, 197, 94, 0.1);
+  color: #059669;
+  border-color: #10b981;
+}
+
+.selected-ingredients {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.selected-ingredients label {
+  font-weight: 500;
+  color: #8b4513;
+  font-size: 0.9rem;
+}
+
+.ingredient-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 248, 240, 0.7);
+  border: 1px solid #ffd1a6;
+  border-radius: 8px;
+  min-height: 3rem;
+}
+
+.ingredient-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, #fff 0%, #fffaf5 100%);
+  border: 1px solid #ffb347;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  color: #8b4513;
+  box-shadow: 0 2px 4px rgba(255, 183, 71, 0.1);
+  transition: all 0.2s ease;
+}
+
+.ingredient-tag:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 183, 71, 0.15);
+}
+
+.remove-ingredient-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  color: #a0522d;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-ingredient-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+/* Loading states */
+.ingredient-search-input:focus {
+  border-color: #ff7518 !important;
+  box-shadow: 0 0 0 3px rgba(255, 117, 24, 0.1) !important;
+  outline: none;
+}
+
+/* Empty state */
+.ingredient-tags:empty::after {
+  content: "No ingredients added yet";
+  color: #a0522d;
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 2rem;
+}
+
 /* Input and Textarea Focus States */
 input:focus,
 textarea:focus {
