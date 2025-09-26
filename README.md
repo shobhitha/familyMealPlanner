@@ -154,6 +154,21 @@ A comprehensive meal planning application that helps families organize their wee
 3. **Select Family Preferences**: Click on family member emojis to mark favorites
 4. **Save the meal**: Click "Create Meal" button
 
+### AI Recipe Suggestions
+
+1. **Click "AI Recipe Ideas" button** in the top navigation (purple button with sparkles)
+2. **Describe what you want**: Enter a natural language prompt like:
+   - "Healthy chicken dinner for the family"
+   - "Quick vegetarian pasta recipe"
+   - "Birthday cake that kids will love"
+3. **Set preferences (optional)**:
+   - **Dietary Requirements**: Select from vegetarian, vegan, gluten-free, keto, etc.
+   - **Cuisine Type**: Choose Italian, Asian, Mexican, American, etc.
+   - **Difficulty Level**: Pick easy, medium, or hard
+4. **Generate Recipe**: Click "Generate Recipe" and wait for AI to create your custom recipe
+5. **Review & Accept**: AI will show complete recipe with ingredients, instructions, and family preference suggestions
+6. **Add to Meals**: Click "Add to My Meals" to save the AI-generated recipe
+
 ### Planning Your Week
 
 1. **View Weekly Grid**: See 7 days with 5 meal slots each
