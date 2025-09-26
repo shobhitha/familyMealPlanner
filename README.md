@@ -331,6 +331,7 @@ For support and questions:
 MONGO_URL=mongodb://your-mongo-host:27017
 DB_NAME=meal_planner_production
 CORS_ORIGINS=https://your-domain.com
+EMERGENT_LLM_KEY=your-ai-api-key-for-recipe-suggestions
 ```
 
 **Frontend:**
