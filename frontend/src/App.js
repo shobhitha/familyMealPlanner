@@ -1780,36 +1780,30 @@ function App() {
   // Load initial data
   useEffect(() => {
     loadData();
-    loadAvailableWeeks();
   }, []);
 
-  // Load data when week changes
+  // Load data when year changes
   useEffect(() => {
     if (!loading) {
-      loadData();
+      loadYearData();
     }
-  }, [currentWeekStart]);
+  }, [currentYear]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       
-      // Load meals, meal plans for current week, and family members
-      const [mealsRes, plansRes, familyRes] = await Promise.all([
+      // Load meals, family members, and current year meal plans
+      const [mealsRes, familyRes] = await Promise.all([
         axios.get(`${API}/meals`),
-        axios.get(`${API}/meal-plans?week_start=${currentWeekStart}`),
         axios.get(`${API}/family-members`)
       ]);
 
       setMeals(mealsRes.data);
       setFamilyMembers(familyRes.data);
       
-      // Convert meal plans array to object keyed by date
-      const plansObj = {};
-      plansRes.data.forEach(plan => {
-        plansObj[plan.date] = plan;
-      });
-      setMealPlans(plansObj);
+      // Load current year meal plans
+      await loadYearData();
 
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -1819,18 +1813,63 @@ function App() {
     }
   };
 
-  const loadAvailableWeeks = async () => {
+  const loadYearData = async () => {
     try {
-      const response = await axios.get(`${API}/meal-plans/weeks-with-plans`);
-      setAvailableWeeks(response.data);
+      // Load all meal plans for the current year
+      const startDate = `${currentYear}-01-01`;
+      const endDate = `${currentYear}-12-31`;
+      
+      const plansRes = await axios.get(`${API}/meal-plans`, {
+        params: { start_date: startDate, end_date: endDate }
+      });
+      
+      // Convert meal plans array to object keyed by date
+      const plansObj = {};
+      plansRes.data.forEach(plan => {
+        plansObj[plan.date] = plan;
+      });
+      setMealPlans(plansObj);
+
     } catch (error) {
-      console.error('Failed to load available weeks:', error);
+      console.error('Failed to load year data:', error);
+      toast.error('Failed to load year data');
     }
   };
 
-  const handleWeekChange = (newWeekStart) => {
-    setCurrentWeekStart(newWeekStart);
-    setWeekDates(getWeekDatesFromStart(newWeekStart));
+  const loadDateRangeData = async (start, end) => {
+    try {
+      const plansRes = await axios.get(`${API}/meal-plans`, {
+        params: { start_date: start, end_date: end }
+      });
+      
+      // Convert meal plans array to object keyed by date
+      const plansObj = {};
+      plansRes.data.forEach(plan => {
+        plansObj[plan.date] = plan;
+      });
+      setMealPlans(plansObj);
+
+    } catch (error) {
+      console.error('Failed to load date range data:', error);
+      toast.error('Failed to load date range data');
+    }
+  };
+
+  const handleDateRangeFilter = async (from, to) => {
+    setFromDate(from);
+    setToDate(to);
+    if (from && to) {
+      await loadDateRangeData(from, to);
+      setCurrentView('table');
+    } else {
+      setCurrentView('calendar');
+      await loadYearData();
+    }
+  };
+
+  const handleYearChange = (newYear) => {
+    setCurrentYear(newYear);
+    setSelectedDate(null);
   };
 
   const handleCreateMeal = async (mealData) => {
