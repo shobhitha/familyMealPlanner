@@ -694,24 +694,58 @@ function App() {
             <ChefHat className="w-8 h-8" />
             Family Meal Planner
           </h1>
-          <Dialog open={isCreateMealOpen} onOpenChange={setIsCreateMealOpen}>
-            <DialogTrigger asChild>
-              <Button data-testid="create-meal-button">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Meal
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create New Meal</DialogTitle>
-              </DialogHeader>
-              <MealForm
-                familyMembers={familyMembers}
-                onSave={handleCreateMeal}
-                onCancel={() => setIsCreateMealOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="header-actions">
+            <Dialog open={isAISuggestionOpen} onOpenChange={setIsAISuggestionOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" data-testid="ai-suggest-button">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  AI Recipe Ideas
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>AI Recipe Suggestions</DialogTitle>
+                </DialogHeader>
+                {!aiSuggestion ? (
+                  <AIRecipeSuggestionForm
+                    onSuggest={handleAIRecipeSuggestion}
+                    onCancel={() => setIsAISuggestionOpen(false)}
+                    isLoading={aiLoading}
+                  />
+                ) : (
+                  <AIRecipePreview
+                    suggestion={aiSuggestion}
+                    onAccept={handleAcceptAISuggestion}
+                    onRegenerate={handleRegenerateAISuggestion}
+                    onCancel={() => {
+                      setAiSuggestion(null);
+                      setIsAISuggestionOpen(false);
+                    }}
+                    familyMembers={familyMembers}
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
+            
+            <Dialog open={isCreateMealOpen} onOpenChange={setIsCreateMealOpen}>
+              <DialogTrigger asChild>
+                <Button data-testid="create-meal-button">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Meal
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Create New Meal</DialogTitle>
+                </DialogHeader>
+                <MealForm
+                  familyMembers={familyMembers}
+                  onSave={handleCreateMeal}
+                  onCancel={() => setIsCreateMealOpen(false)}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
 
