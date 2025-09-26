@@ -157,6 +157,13 @@ async def create_meal(meal_input: MealCreate):
     if meal_input.recipe and not meal_input.recipe.strip():
         raise HTTPException(status_code=422, detail="Recipe cannot be empty if provided")
     
+    # Update ingredient usage counts
+    for ingredient_name in valid_ingredients:
+        try:
+            await create_or_increment_ingredient(IngredientCreate(name=ingredient_name))
+        except Exception as e:
+            logger.warning(f"Failed to update ingredient usage for '{ingredient_name}': {str(e)}")
+    
     meal_dict = meal_input.dict()
     # Update ingredients to only include non-empty ones
     meal_dict['ingredients'] = valid_ingredients
