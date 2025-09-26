@@ -186,7 +186,9 @@ function AIRecipeSuggestionForm({ onSuggest, onCancel, isLoading }) {
   return (
     <form onSubmit={handleSubmit} className="ai-suggestion-form">
       <div className="form-group">
-        <Label htmlFor="recipe-prompt">What would you like to cook?</Label>
+        <Label htmlFor="recipe-prompt">
+          What would you like to cook? <span className="required-asterisk">*</span>
+        </Label>
         <Textarea
           id="recipe-prompt"
           value={formData.prompt}
@@ -194,6 +196,8 @@ function AIRecipeSuggestionForm({ onSuggest, onCancel, isLoading }) {
           placeholder="E.g., healthy chicken dinner, quick vegetarian pasta, birthday cake for kids..."
           rows={3}
           data-testid="recipe-prompt-input"
+          required
+          className={!formData.prompt.trim() ? 'error-border' : ''}
         />
       </div>
 
