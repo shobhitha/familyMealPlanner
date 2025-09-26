@@ -103,6 +103,22 @@ class AIRecipeSuggestion(BaseModel):
     difficulty_level: Optional[str] = None
     cooking_time: Optional[str] = None
 
+class Ingredient(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    category: Optional[str] = None  # e.g., "vegetable", "protein", "spice", "dairy"
+    is_common: bool = False  # True for pre-seeded common ingredients
+    usage_count: int = 0  # How many times user has used this ingredient
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class IngredientCreate(BaseModel):
+    name: str
+    category: Optional[str] = None
+
+class IngredientSearch(BaseModel):
+    query: str
+    limit: Optional[int] = 10
+
 # Helper functions
 def prepare_for_mongo(data):
     """Convert datetime objects to ISO strings for MongoDB storage"""
