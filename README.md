@@ -32,7 +32,15 @@ A comprehensive meal planning application that helps families organize their wee
   - 🍽️ **Dinner** - Evening meal
   - 🍪 **Evening Snack** - Night-time snack
 
-### 🎯 Drag & Drop Functionality
+### 🤖 AI Recipe Suggestions
+- **AI-Powered Recipe Generation**: Get recipe suggestions based on natural language prompts
+- **Smart Recipe Creation**: Ask for "healthy chicken dinner" or "vegetarian pasta for kids"
+- **Structured Recipe Output**: AI generates complete recipes with ingredients, instructions, and cooking details
+- **Dietary Preferences**: Filter suggestions by vegetarian, vegan, gluten-free, keto, etc.
+- **Cuisine Selection**: Choose from Italian, Asian, Mexican, American, and more
+- **Difficulty Levels**: Easy, medium, or hard recipe complexity
+- **Family Preference Suggestions**: AI recommends which family members might enjoy the recipe
+- **One-Click Integration**: Add AI-generated recipes directly to your meal library
 - **Intuitive Meal Assignment**: Drag meals from sidebar to planning slots
 - **Visual Feedback**: Smooth animations and hover effects
 - **Easy Reassignment**: Move meals between different time slots
