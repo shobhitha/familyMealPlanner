@@ -170,26 +170,279 @@ class MealPlannerAPITester:
         
         return success
 
+    def test_calendar_functionality(self):
+        """Comprehensive test of calendar-related backend functionality"""
+        print("\n🗓️  Testing Calendar Functionality...")
+        
+        # Test 1: Create test meal for calendar testing
+        test_meal = {
+            "name": "Fluffy Pancakes",
+            "ingredients": ["Flour", "Eggs", "Milk", "Sugar", "Baking powder", "Butter"],
+            "recipe": "Mix dry ingredients, add wet ingredients, cook on griddle until golden.",
+            "family_preferences": ["dad", "mom", "brother", "sister"]
+        }
+        
+        success, meal_response = self.run_test(
+            "Create Test Meal for Calendar",
+            "POST",
+            "meals",
+            200,
+            data=test_meal
+        )
+        
+        if not success or not meal_response.get('id'):
+            print("❌ Cannot proceed with calendar tests - meal creation failed")
+            return
+            
+        test_meal_id = meal_response['id']
+        self.created_meal_ids.append(test_meal_id)
+        
+        # Test 2: Get meal plans for full year (2025-01-01 to 2025-12-31)
+        success, response = self.run_test(
+            "Get Meal Plans - Full Year 2025",
+            "GET",
+            "meal-plans",
+            200,
+            params={"start_date": "2025-01-01", "end_date": "2025-12-31"}
+        )
+        
+        if success and isinstance(response, list):
+            self.log_test("Full Year Query Format", True, f"Found {len(response)} meal plans")
+        
+        # Test 3: Get meal plans for custom date range (week view)
+        success, response = self.run_test(
+            "Get Meal Plans - Week Range",
+            "GET",
+            "meal-plans",
+            200,
+            params={"start_date": "2025-01-01", "end_date": "2025-01-07"}
+        )
+        
+        if success and isinstance(response, list):
+            self.log_test("Week Range Query Format", True, f"Found {len(response)} meal plans")
+        
+        # Test 4: Get meal plan for specific date (January 1, 2025)
+        test_date = "2025-01-01"
+        success, response = self.run_test(
+            "Get Meal Plan - Specific Date",
+            "GET",
+            f"meal-plans/{test_date}",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            if response.get('date') == test_date:
+                self.log_test("Specific Date Response", True)
+            else:
+                self.log_test("Specific Date Response", False, f"Expected date {test_date}, got {response.get('date')}")
+        
+        # Test 5: Assign meal to breakfast on January 1, 2025
+        meal_assignment = {
+            "meal_slot": "breakfast",
+            "meal_id": test_meal_id
+        }
+        
+        success, response = self.run_test(
+            "Assign Meal to Breakfast Slot",
+            "PUT",
+            f"meal-plans/{test_date}",
+            200,
+            data=meal_assignment
+        )
+        
+        if success and isinstance(response, dict):
+            if response.get('breakfast') == test_meal_id:
+                self.log_test("Breakfast Assignment Validation", True)
+            else:
+                self.log_test("Breakfast Assignment Validation", False, f"Expected {test_meal_id}, got {response.get('breakfast')}")
+        
+        # Test 6: Test all meal slots assignment
+        meal_slots = ["morning_snack", "lunch", "dinner", "evening_snack"]
+        for slot in meal_slots:
+            assignment = {
+                "meal_slot": slot,
+                "meal_id": test_meal_id
+            }
+            
+            success, response = self.run_test(
+                f"Assign Meal to {slot.replace('_', ' ').title()} Slot",
+                "PUT",
+                f"meal-plans/{test_date}",
+                200,
+                data=assignment
+            )
+            
+            if success and isinstance(response, dict):
+                if response.get(slot) == test_meal_id:
+                    self.log_test(f"{slot.replace('_', ' ').title()} Assignment Validation", True)
+                else:
+                    self.log_test(f"{slot.replace('_', ' ').title()} Assignment Validation", False, f"Assignment failed")
+        
+        # Test 7: Verify meal plan persistence by retrieving it again
+        success, response = self.run_test(
+            "Verify Meal Plan Persistence",
+            "GET",
+            f"meal-plans/{test_date}",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            assigned_slots = 0
+            for slot in ["breakfast", "morning_snack", "lunch", "dinner", "evening_snack"]:
+                if response.get(slot) == test_meal_id:
+                    assigned_slots += 1
+            
+            if assigned_slots == 5:
+                self.log_test("All Meal Slots Persistence", True, "All 5 slots correctly assigned")
+            else:
+                self.log_test("All Meal Slots Persistence", False, f"Only {assigned_slots}/5 slots persisted")
+        
+        # Test 8: Test removing meal from slot
+        remove_assignment = {
+            "meal_slot": "evening_snack",
+            "meal_id": None
+        }
+        
+        success, response = self.run_test(
+            "Remove Meal from Evening Snack Slot",
+            "PUT",
+            f"meal-plans/{test_date}",
+            200,
+            data=remove_assignment
+        )
+        
+        if success and isinstance(response, dict):
+            if response.get('evening_snack') is None:
+                self.log_test("Meal Removal Validation", True)
+            else:
+                self.log_test("Meal Removal Validation", False, f"Meal not removed, got {response.get('evening_snack')}")
+        
+        # Test 9: Test monthly meal plans endpoint
+        success, response = self.run_test(
+            "Get Monthly Meal Plans - January 2025",
+            "GET",
+            "meal-plans/month/2025/1",
+            200
+        )
+        
+        if success and isinstance(response, list):
+            self.log_test("Monthly Meal Plans Format", True, f"Found {len(response)} plans for January 2025")
+        
+        # Test 10: Test weeks with meal plans endpoint
+        success, response = self.run_test(
+            "Get Weeks with Meal Plans",
+            "GET",
+            "meal-plans/weeks-with-plans",
+            200
+        )
+        
+        if success and isinstance(response, list):
+            self.log_test("Weeks with Plans Format", True, f"Found {len(response)} weeks with plans")
+        
+        # Test 11: Test months with meal plans endpoint
+        success, response = self.run_test(
+            "Get Months with Meal Plans",
+            "GET",
+            "meal-plans/months-with-plans",
+            200
+        )
+        
+        if success and isinstance(response, list):
+            self.log_test("Months with Plans Format", True, f"Found {len(response)} months with plans")
+        
+        # Test 12: Test meal plan creation via POST
+        new_date = "2025-01-02"
+        meal_plan_data = {
+            "date": new_date,
+            "breakfast": test_meal_id,
+            "lunch": test_meal_id,
+            "dinner": test_meal_id
+        }
+        
+        success, response = self.run_test(
+            "Create Complete Meal Plan",
+            "POST",
+            "meal-plans",
+            200,
+            data=meal_plan_data
+        )
+        
+        if success and isinstance(response, dict):
+            if (response.get('date') == new_date and 
+                response.get('breakfast') == test_meal_id and
+                response.get('lunch') == test_meal_id and
+                response.get('dinner') == test_meal_id):
+                self.log_test("Complete Meal Plan Creation", True)
+            else:
+                self.log_test("Complete Meal Plan Creation", False, "Data mismatch in created plan")
+        
+        # Test 13: Test week-based meal plan query
+        success, response = self.run_test(
+            "Get Meal Plans by Week",
+            "GET",
+            "meal-plans",
+            200,
+            params={"week_start": "2024-12-30"}  # Monday of the week containing Jan 1, 2025
+        )
+        
+        if success and isinstance(response, list):
+            self.log_test("Week-based Query Format", True, f"Found {len(response)} plans for week")
+        
+        print("✅ Calendar functionality testing completed")
+
+    def test_ingredient_search(self):
+        """Test ingredient search functionality"""
+        print("\n🔍 Testing Ingredient Search...")
+        
+        # Test ingredient search
+        search_data = {
+            "query": "chicken",
+            "limit": 10
+        }
+        
+        success, response = self.run_test(
+            "Search Ingredients",
+            "POST",
+            "ingredients/search",
+            200,
+            data=search_data
+        )
+        
+        if success and isinstance(response, list):
+            self.log_test("Ingredient Search Format", True, f"Found {len(response)} ingredients")
+        
+        # Test popular ingredients
+        success, response = self.run_test(
+            "Get Popular Ingredients",
+            "GET",
+            "ingredients/popular",
+            200,
+            params={"limit": 20}
+        )
+        
+        if success and isinstance(response, list):
+            self.log_test("Popular Ingredients Format", True, f"Found {len(response)} popular ingredients")
+
     def test_meal_plans(self):
-        """Test meal planning functionality"""
+        """Test basic meal planning functionality (legacy method)"""
         # Get current date
         today = date.today()
         test_date = today.isoformat()
         
         # Test getting meal plans
         success, response = self.run_test(
-            "Get Meal Plans",
+            "Get Meal Plans (Basic)",
             "GET",
             "meal-plans",
             200
         )
         
         if success and isinstance(response, list):
-            self.log_test("Meal Plans List Format", True)
+            self.log_test("Meal Plans List Format (Basic)", True)
         
         # Test getting meal plan by date (should return empty plan)
         success, response = self.run_test(
-            "Get Meal Plan by Date",
+            "Get Meal Plan by Date (Basic)",
             "GET",
             f"meal-plans/{test_date}",
             200
@@ -204,7 +457,7 @@ class MealPlannerAPITester:
             }
             
             success, response = self.run_test(
-                "Create Meal Plan",
+                "Create Meal Plan (Basic)",
                 "POST",
                 "meal-plans",
                 200,
@@ -219,7 +472,7 @@ class MealPlannerAPITester:
                 }
                 
                 success, response = self.run_test(
-                    "Update Meal Plan Slot",
+                    "Update Meal Plan Slot (Basic)",
                     "PUT",
                     f"meal-plans/{test_date}",
                     200,
@@ -233,7 +486,7 @@ class MealPlannerAPITester:
                 }
                 
                 success, response = self.run_test(
-                    "Remove Meal from Slot",
+                    "Remove Meal from Slot (Basic)",
                     "PUT",
                     f"meal-plans/{test_date}",
                     200,
