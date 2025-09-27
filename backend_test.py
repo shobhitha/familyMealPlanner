@@ -551,7 +551,7 @@ class MealPlannerAPITester:
 
     def run_all_tests(self):
         """Run all tests"""
-        print("🧪 Starting Meal Planner API Tests...")
+        print("🧪 Starting Comprehensive Meal Planner API Tests...")
         print(f"🌐 Testing against: {self.base_url}")
         print("=" * 60)
         
@@ -573,14 +573,21 @@ class MealPlannerAPITester:
             # Test updating meal
             self.test_update_meal(meal_id)
             
-            # Test meal planning
+            # Test basic meal planning
             self.test_meal_plans()
-            
-            # Test meal deletion (do this last)
-            self.test_delete_meal(meal_id)
+        
+        # Test comprehensive calendar functionality
+        self.test_calendar_functionality()
+        
+        # Test ingredient search functionality
+        self.test_ingredient_search()
         
         # Test error handling
         self.test_error_handling()
+        
+        # Clean up created meals (do this last)
+        for meal_id in self.created_meal_ids:
+            self.test_delete_meal(meal_id)
         
         # Print summary
         print("\n" + "=" * 60)
