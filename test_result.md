@@ -116,6 +116,9 @@ backend:
       - working: true
         agent: "main"
         comment: "All existing backend endpoints for meal plans, date range queries, and meal management are working correctly to support calendar functionality"
+      - working: true
+        agent: "testing"
+        comment: "Comprehensive calendar backend testing completed successfully. All 57 tests passed (100% success rate). Tested: meal plans CRUD with date ranges (full year 2025, custom ranges), individual day plans GET/PUT, meal assignment to all 5 slots (breakfast, morning_snack, lunch, dinner, evening_snack), date range queries, historical data endpoints (weeks/months with plans), meals management, ingredient search, week-based queries, meal plan persistence, and data validation. Week copy functionality working. Minor issue: month copy functionality has datetime.fromisoformat compatibility issue but doesn't affect core calendar features. All calendar endpoints return proper JSON responses, date filtering works correctly, meal assignments persist properly, and empty/null meal slots are handled correctly."
 
 frontend:
   - task: "Year Calendar View Implementation"
